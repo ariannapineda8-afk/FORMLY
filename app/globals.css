@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+h1, h2, h3, .brand {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.badge {
+  @apply px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-block;
+}
+.badge.activo { @apply bg-green-100 text-[#2E8B57]; }
+.badge.borrador { @apply bg-amber-100 text-[#C08A2E]; }
+.badge.inactivo { @apply bg-gray-100 text-[#8A93A3]; }
