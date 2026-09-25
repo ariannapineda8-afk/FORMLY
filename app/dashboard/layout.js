@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/Sidebar";
+import SignOutButton from "@/components/SignOutButton";
 
 export default async function DashboardLayout({ children }) {
   const supabase = createClient();
@@ -26,6 +27,7 @@ export default async function DashboardLayout({ children }) {
             lista de usuarios autorizados de Formly. Pide a un administrador que te
             agregue en la tabla <code>allowed_users</code>.
           </p>
+          <SignOutButton />
         </div>
       </div>
     );
