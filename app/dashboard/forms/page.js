@@ -78,42 +78,31 @@ export default function FormsListPage() {
       )}
 
       {forms.length > 0 && (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Estado</th>
-                  <th>Actualizado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {forms.map((f) => (
-                  <tr key={f.id}>
-                    <td className="font-medium">{f.title}</td>
-                    <td>
-                      <span className={`badge ${f.status}`}>{f.status}</span>
-                    </td>
-                    <td className="text-gray-500">{new Date(f.updated_at).toLocaleDateString()}</td>
-                    <td>
-                      <div className="flex gap-1.5 flex-wrap">
-                        <Link href={`/dashboard/forms/${f.id}/edit`} className="btn-sm">Editar</Link>
-                        <Link href={`/dashboard/forms/${f.id}/responses`} className="btn-sm">Respuestas</Link>
-                        <button onClick={() => duplicate(f)} className="btn-sm">Duplicar</button>
-                        <button onClick={() => toggleStatus(f)} className="btn-sm">
-                          {f.status === "activo" ? "Desactivar" : "Activar"}
-                        </button>
-                        <button onClick={() => copyLink(f.slug)} className="btn-sm">Copiar enlace</button>
-                        <button onClick={() => remove(f)} className="btn-sm">Eliminar</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {forms.map((f) => (
+            <div key={f.id} className="card p-5 flex flex-col">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-9 h-9 rounded-xl bg-navylt text-navy flex items-center justify-center font-display font-semibold text-[14px]">
+                  {(f.title || "?").slice(0, 1).toUpperCase()}
+                </div>
+                <span className={`badge ${f.status}`}>{f.status}</span>
+              </div>
+              <h3 className="text-[15px] font-semibold text-navy mb-1 leading-snug">{f.title}</h3>
+              <p className="text-[12px] text-gray-500 mb-4">
+                Actualizado {new Date(f.updated_at).toLocaleDateString()}
+              </p>
+              <div className="flex gap-1.5 flex-wrap mt-auto pt-3 border-t border-[#F2EFE9]">
+                <Link href={`/dashboard/forms/${f.id}/edit`} className="btn-sm">Editar</Link>
+                <Link href={`/dashboard/forms/${f.id}/responses`} className="btn-sm">Respuestas</Link>
+                <button onClick={() => duplicate(f)} className="btn-sm">Duplicar</button>
+                <button onClick={() => toggleStatus(f)} className="btn-sm">
+                  {f.status === "activo" ? "Desactivar" : "Activar"}
+                </button>
+                <button onClick={() => copyLink(f.slug)} className="btn-sm">Copiar enlace</button>
+                <button onClick={() => remove(f)} className="btn-sm">Eliminar</button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

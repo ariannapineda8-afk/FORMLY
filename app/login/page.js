@@ -30,50 +30,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-cream">
-      <form
-        onSubmit={handleLogin}
-        className="card p-9 w-full max-w-[380px]"
-      >
-        <div className="w-11 h-11 rounded-2xl bg-navy mx-auto mb-4 flex items-center justify-center text-white font-display font-bold text-[17px]">
-          F
+    <div className="min-h-screen flex bg-cream">
+      <div className="hidden md:flex w-[42%] max-w-[440px] bg-navy text-white flex-col justify-between p-10 relative overflow-hidden">
+        <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/[0.04]" />
+        <div className="absolute -right-6 bottom-24 w-40 h-40 rounded-full border border-white/10" />
+        <div className="relative">
+          <div className="w-9 h-9 rounded-xl bg-coral flex items-center justify-center text-white font-display font-bold text-[15px] mb-8">
+            F
+          </div>
+          <h1 className="font-display text-[30px] leading-[1.15] font-semibold mb-3">
+            Formularios internos de Mardom, en un solo lugar.
+          </h1>
+          <p className="text-[13.5px] text-[#B9C6DC] leading-relaxed max-w-[300px]">
+            Crea formularios, compártelos con un enlace y revisa cada respuesta
+            organizada y lista para descargar.
+          </p>
         </div>
-        <h1 className="text-[19px] text-center text-navy mb-0.5 font-semibold">Formly</h1>
-        <p className="text-center text-gray-500 text-[12.5px] mb-6">
-          Panel de administración — acceso interno
-        </p>
+        <p className="relative text-[11.5px] text-[#8FA0BE]">Formly · Panel interno</p>
+      </div>
 
-        <div className="mb-3.5">
-          <label className="block text-[12.5px] text-gray-500 mb-1">Correo electrónico</label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="nombre@mardom.com"
-            className="input"
-          />
-        </div>
-        <div className="mb-5">
-          <label className="block text-[12.5px] text-gray-500 mb-1">Contraseña</label>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="input"
-          />
-        </div>
+      <div className="flex-1 flex items-center justify-center p-6">
+        <form onSubmit={handleLogin} className="w-full max-w-[360px]">
+          <h2 className="text-[20px] text-navy font-semibold mb-1">Bienvenido de nuevo</h2>
+          <p className="text-gray-500 text-[13px] mb-7">Ingresa con tu cuenta de Mardom.</p>
 
-        <button type="submit" disabled={loading} className="btn btn-primary w-full">
-          {loading ? "Entrando..." : "Entrar"}
-        </button>
+          <div className="mb-3.5">
+            <label className="block text-[12.5px] text-gray-500 mb-1">Correo electrónico</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nombre@mardom.com"
+              className="input"
+            />
+          </div>
+          <div className="mb-5">
+            <label className="block text-[12.5px] text-gray-500 mb-1">Contraseña</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="input"
+            />
+          </div>
 
-        {error && (
-          <p className="text-[#B23A3A] text-[12.5px] text-center mt-3">{error}</p>
-        )}
-      </form>
+          <button type="submit" disabled={loading} className="btn btn-primary w-full">
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
+
+          {error && (
+            <p className="text-[#B23A3A] text-[12.5px] text-center mt-3">{error}</p>
+          )}
+        </form>
+      </div>
     </div>
   );
 }

@@ -37,9 +37,11 @@ export default async function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-cream">
+    <div className="flex min-h-screen bg-cream p-3 gap-3">
       <Sidebar email={user.email} />
-      <div className="flex-1 min-w-0 px-8 py-7 pb-16">{children}</div>
+      <div className="flex-1 min-w-0 bg-white border border-[#ECE7DE] rounded-2xl px-8 py-7 pb-16 shadow-[0_1px_3px_rgba(18,41,77,0.05)]">
+        {children}
+      </div>
     </div>
   );
 }

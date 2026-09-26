@@ -52,7 +52,7 @@ export default function Sidebar({ email }) {
   }
 
   return (
-    <div className="w-[220px] shrink-0 bg-navy text-[#CFDAEA] flex flex-col py-5 min-h-screen">
+    <div className="w-[220px] shrink-0 bg-navy text-[#CFDAEA] flex flex-col py-5 rounded-2xl shadow-[0_1px_3px_rgba(18,41,77,0.15)]">
       <div className="brand text-white text-[16.5px] font-bold px-5 pb-6 flex items-center gap-2">
         <span className="w-6 h-6 rounded-lg bg-coral flex items-center justify-center text-[11px] font-bold text-white">
           F
