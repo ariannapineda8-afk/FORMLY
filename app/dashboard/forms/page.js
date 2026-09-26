@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -8,6 +8,7 @@ export default function FormsListPage() {
   const supabase = createClient();
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,6 +56,12 @@ export default function FormsListPage() {
     alert("Enlace copiado:\n" + url);
   }
 
+  const filtered = useMemo(() => {
+    if (!search.trim()) return forms;
+    const q = search.trim().toLowerCase();
+    return forms.filter((f) => (f.title || "").toLowerCase().includes(q));
+  }, [forms, search]);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
@@ -67,6 +74,24 @@ export default function FormsListPage() {
         </Link>
       </div>
 
+      {!loading && forms.length > 0 && (
+        <div className="relative mb-4 max-w-[340px]">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.2-3.2" />
+          </svg>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar formulario por nombre..."
+            className="input pl-9"
+          />
+        </div>
+      )}
+
       {loading && <p className="text-gray-500">Cargando...</p>}
       {!loading && forms.length === 0 && (
         <div className="card empty-state">
@@ -76,10 +101,18 @@ export default function FormsListPage() {
           </p>
         </div>
       )}
+      {!loading && forms.length > 0 && filtered.length === 0 && (
+        <div className="card empty-state">
+          <div className="dot">🔎</div>
+          <p className="text-gray-500 text-[13px]">
+            No encontramos formularios que coincidan con "{search}".
+          </p>
+        </div>
+      )}
 
-      {forms.length > 0 && (
+      {filtered.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {forms.map((f) => (
+          {filtered.map((f) => (
             <div key={f.id} className="card p-5 flex flex-col">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-xl bg-navylt text-navy flex items-center justify-center font-display font-semibold text-[14px]">
