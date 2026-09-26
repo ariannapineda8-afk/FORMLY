@@ -23,26 +23,28 @@ export default async function DashboardHome() {
       <h1 className="page-title">Inicio</h1>
       <p className="page-subtitle mb-6">Un vistazo rápido a tus formularios y respuestas.</p>
 
-      <div className="bg-navy rounded-2xl p-7 mb-6 relative overflow-hidden">
-        <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/[0.04]" />
-        <div className="absolute right-16 bottom-0 w-24 h-24 rounded-full border border-white/10" />
-        <p className="relative text-[#B9C6DC] text-[12.5px] mb-1.5">Respuestas recibidas en total</p>
-        <div className="relative font-display text-white text-[46px] font-semibold leading-none mb-5">
-          {totalResponses || 0}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
+        <div className="card p-4.5">
+          <p className="text-[12px] text-gray-500 mb-2">Respuestas totales</p>
+          <div className="font-display text-navy text-[28px] font-semibold leading-none">
+            {totalResponses || 0}
+          </div>
         </div>
-        <div className="relative flex gap-6">
-          <div>
-            <div className="text-white text-[19px] font-display font-semibold">{all.length}</div>
-            <div className="text-[#8FA0BE] text-[11.5px]">Formularios totales</div>
-          </div>
-          <div>
-            <div className="text-mint text-[19px] font-display font-semibold">{activos}</div>
-            <div className="text-[#8FA0BE] text-[11.5px]">Activos</div>
-          </div>
-          <div>
-            <div className="text-warn text-[19px] font-display font-semibold">{borrador}</div>
-            <div className="text-[#8FA0BE] text-[11.5px]">En borrador</div>
-          </div>
+        <div className="card p-4.5">
+          <p className="text-[12px] text-gray-500 mb-2">Formularios totales</p>
+          <div className="font-display text-navy text-[28px] font-semibold leading-none">{all.length}</div>
+        </div>
+        <div className="card p-4.5">
+          <p className="text-[12px] text-gray-500 mb-2 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-mint inline-block" /> Activos
+          </p>
+          <div className="font-display text-mint text-[28px] font-semibold leading-none">{activos}</div>
+        </div>
+        <div className="card p-4.5">
+          <p className="text-[12px] text-gray-500 mb-2 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-warn inline-block" /> En borrador
+          </p>
+          <div className="font-display text-warn text-[28px] font-semibold leading-none">{borrador}</div>
         </div>
       </div>
 
