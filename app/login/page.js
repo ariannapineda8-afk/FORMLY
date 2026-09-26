@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -35,9 +36,7 @@ export default function LoginPage() {
         <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/[0.04]" />
         <div className="absolute -right-6 bottom-24 w-40 h-40 rounded-full border border-white/10" />
         <div className="relative">
-          <div className="w-9 h-9 rounded-xl bg-coral flex items-center justify-center text-white font-display font-bold text-[15px] mb-8">
-            F
-          </div>
+          <Image src="/logo-white.png" alt="Formly" width={52} height={68} className="mb-8" priority />
           <h1 className="font-display text-[30px] leading-[1.15] font-semibold mb-3">
             Formularios internos de Mardom, en un solo lugar.
           </h1>
@@ -51,6 +50,7 @@ export default function LoginPage() {
 
       <div className="flex-1 flex items-center justify-center p-6">
         <form onSubmit={handleLogin} className="w-full max-w-[360px]">
+          <Image src="/logo-navy.png" alt="Formly" width={34} height={44} className="mb-5 md:hidden" />
           <h2 className="text-[20px] text-navy font-semibold mb-1">Bienvenido de nuevo</h2>
           <p className="text-gray-500 text-[13px] mb-7">Ingresa con tu cuenta de Mardom.</p>
 
