@@ -57,69 +57,65 @@ export default function FormsListPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-[21px] text-navy">Formularios</h1>
-        <Link href="/dashboard/forms/new" className="px-4 py-2 bg-navy text-white rounded-lg text-[13px] font-medium hover:bg-navy2">
+      <div className="flex justify-between items-center mb-5">
+        <div>
+          <h1 className="page-title">Formularios</h1>
+          <p className="page-subtitle">Crea, comparte y administra todos tus formularios.</p>
+        </div>
+        <Link href="/dashboard/forms/new" className="btn btn-primary">
           + Crear formulario
         </Link>
       </div>
 
       {loading && <p className="text-gray-500">Cargando...</p>}
       {!loading && forms.length === 0 && (
-        <p className="text-gray-500 text-center py-16">
-          No hay formularios todavía. Crea el primero con el botón de arriba.
-        </p>
+        <div className="card empty-state">
+          <div className="dot">＋</div>
+          <p className="text-gray-500 text-[13px]">
+            No hay formularios todavía. Crea el primero con el botón de arriba.
+          </p>
+        </div>
       )}
 
       {forms.length > 0 && (
-        <table className="w-full border-collapse bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <thead>
-            <tr className="bg-gray-50 text-gray-500 text-[11.5px] uppercase tracking-wide">
-              <th className="text-left px-3.5 py-2.5">Nombre</th>
-              <th className="text-left px-3.5 py-2.5">Estado</th>
-              <th className="text-left px-3.5 py-2.5">Actualizado</th>
-              <th className="text-left px-3.5 py-2.5">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {forms.map((f) => (
-              <tr key={f.id} className="border-b border-gray-100 last:border-none text-[13px]">
-                <td className="px-3.5 py-2.5 font-medium">{f.title}</td>
-                <td className="px-3.5 py-2.5">
-                  <span className={`badge ${f.status}`}>{f.status}</span>
-                </td>
-                <td className="px-3.5 py-2.5">{new Date(f.updated_at).toLocaleDateString()}</td>
-                <td className="px-3.5 py-2.5">
-                  <div className="flex gap-1.5 flex-wrap">
-                    <Link href={`/dashboard/forms/${f.id}/edit`} className="btn-sm">Editar</Link>
-                    <Link href={`/dashboard/forms/${f.id}/responses`} className="btn-sm">Respuestas</Link>
-                    <button onClick={() => duplicate(f)} className="btn-sm">Duplicar</button>
-                    <button onClick={() => toggleStatus(f)} className="btn-sm">
-                      {f.status === "activo" ? "Desactivar" : "Activar"}
-                    </button>
-                    <button onClick={() => copyLink(f.slug)} className="btn-sm">Copiar enlace</button>
-                    <button onClick={() => remove(f)} className="btn-sm">Eliminar</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Estado</th>
+                  <th>Actualizado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {forms.map((f) => (
+                  <tr key={f.id}>
+                    <td className="font-medium">{f.title}</td>
+                    <td>
+                      <span className={`badge ${f.status}`}>{f.status}</span>
+                    </td>
+                    <td className="text-gray-500">{new Date(f.updated_at).toLocaleDateString()}</td>
+                    <td>
+                      <div className="flex gap-1.5 flex-wrap">
+                        <Link href={`/dashboard/forms/${f.id}/edit`} className="btn-sm">Editar</Link>
+                        <Link href={`/dashboard/forms/${f.id}/responses`} className="btn-sm">Respuestas</Link>
+                        <button onClick={() => duplicate(f)} className="btn-sm">Duplicar</button>
+                        <button onClick={() => toggleStatus(f)} className="btn-sm">
+                          {f.status === "activo" ? "Desactivar" : "Activar"}
+                        </button>
+                        <button onClick={() => copyLink(f.slug)} className="btn-sm">Copiar enlace</button>
+                        <button onClick={() => remove(f)} className="btn-sm">Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
-
-      <style jsx global>{`
-        .btn-sm {
-          border: 1px solid #e2e6ec;
-          background: #fff;
-          border-radius: 6px;
-          padding: 4px 9px;
-          font-size: 11.5px;
-          color: #12294d;
-        }
-        .btn-sm:hover {
-          background: #eaf1f8;
-        }
-      `}</style>
     </div>
   );
 }

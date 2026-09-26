@@ -30,13 +30,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-cream">
       <form
         onSubmit={handleLogin}
-        className="bg-white border border-gray-200 rounded-xl p-9 w-full max-w-[380px] shadow-sm"
+        className="card p-9 w-full max-w-[380px]"
       >
-        <div className="w-11 h-11 rounded-full border-[3px] border-navy mx-auto mb-3.5" />
-        <h1 className="text-[19px] text-center text-navy mb-0.5">Formly</h1>
+        <div className="w-11 h-11 rounded-2xl bg-navy mx-auto mb-4 flex items-center justify-center text-white font-display font-bold text-[17px]">
+          F
+        </div>
+        <h1 className="text-[19px] text-center text-navy mb-0.5 font-semibold">Formly</h1>
         <p className="text-center text-gray-500 text-[12.5px] mb-6">
           Panel de administración — acceso interno
         </p>
@@ -49,10 +51,10 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="nombre@mardom.com"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue"
+            className="input"
           />
         </div>
-        <div className="mb-3.5">
+        <div className="mb-5">
           <label className="block text-[12.5px] text-gray-500 mb-1">Contraseña</label>
           <input
             type="password"
@@ -60,20 +62,16 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue"
+            className="input"
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 bg-navy text-white rounded-lg font-semibold hover:bg-navy2 disabled:opacity-60"
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary w-full">
           {loading ? "Entrando..." : "Entrar"}
         </button>
 
         {error && (
-          <p className="text-[#B23A3A] text-[12.5px] text-center mt-2.5">{error}</p>
+          <p className="text-[#B23A3A] text-[12.5px] text-center mt-3">{error}</p>
         )}
       </form>
     </div>

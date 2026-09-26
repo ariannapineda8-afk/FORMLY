@@ -6,9 +6,88 @@ h1, h2, h3, .brand {
   font-family: "Space Grotesk", sans-serif;
 }
 
-.badge {
-  @apply px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-block;
+::selection {
+  background: #ffdcd0;
 }
-.badge.activo { @apply bg-green-100 text-[#2E8B57]; }
-.badge.borrador { @apply bg-amber-100 text-[#C08A2E]; }
-.badge.inactivo { @apply bg-gray-100 text-[#8A93A3]; }
+
+.page-title {
+  @apply text-[22px] text-navy font-semibold tracking-tight;
+}
+.page-subtitle {
+  @apply text-gray-500 text-[13.5px] mt-1;
+}
+
+.card {
+  @apply bg-white border border-[#ECE7DE] rounded-2xl shadow-[0_1px_2px_rgba(18,41,77,0.04)];
+}
+
+.input {
+  @apply w-full px-3 py-2.5 border border-[#E4E7EC] rounded-xl outline-none transition-colors bg-white;
+}
+.input:focus {
+  @apply border-coral;
+  box-shadow: 0 0 0 3px rgba(255, 107, 77, 0.12);
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold px-4 py-2.5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed;
+}
+.btn-primary {
+  @apply bg-coral text-white;
+}
+.btn-primary:hover:not(:disabled) {
+  @apply bg-coral2;
+}
+.btn-navy {
+  @apply bg-navy text-white;
+}
+.btn-navy:hover:not(:disabled) {
+  @apply bg-navy2;
+}
+.btn-outline {
+  @apply bg-white border border-[#E4E7EC] text-navy;
+}
+.btn-outline:hover:not(:disabled) {
+  @apply bg-[#F7F5F1] border-[#D9DEE6];
+}
+
+.btn-sm {
+  @apply inline-flex items-center rounded-lg text-[12px] font-medium px-2.5 py-1.5 border border-[#E4E7EC] bg-white text-navy transition-colors;
+}
+.btn-sm:hover {
+  @apply bg-corallt border-[#FFD9CC] text-coral2;
+}
+
+.badge {
+  @apply px-2.5 py-1 rounded-full text-[11px] font-semibold inline-flex items-center gap-1.5;
+}
+.badge::before {
+  content: "";
+  @apply w-[6px] h-[6px] rounded-full inline-block;
+}
+.badge.activo { @apply bg-mintlt text-mint; }
+.badge.activo::before { @apply bg-mint; }
+.badge.borrador { @apply bg-warnlt text-warn; }
+.badge.borrador::before { @apply bg-warn; }
+.badge.inactivo { @apply bg-gray-100 text-off; }
+.badge.inactivo::before { @apply bg-off; }
+
+.data-table {
+  @apply w-full border-collapse;
+}
+.data-table thead th {
+  @apply text-left px-4 py-3 text-[11px] font-semibold text-off tracking-wide bg-[#FAF8F4] border-b border-[#ECE7DE];
+}
+.data-table tbody td {
+  @apply px-4 py-3 text-[13px] border-b border-[#F2EFE9] last:border-none;
+}
+.data-table tbody tr:hover {
+  @apply bg-[#FCFBF8];
+}
+
+.empty-state {
+  @apply text-center py-16 px-6;
+}
+.empty-state .dot {
+  @apply w-10 h-10 rounded-full bg-corallt mx-auto mb-3.5 flex items-center justify-center text-coral2 text-[18px] font-semibold;
+}

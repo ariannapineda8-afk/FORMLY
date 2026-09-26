@@ -19,10 +19,13 @@ export default async function DashboardLayout({ children }) {
 
   if (!allowed) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-sm text-center">
-          <h1 className="text-navy text-lg mb-2">Sin acceso</h1>
-          <p className="text-gray-500 text-sm">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-cream">
+        <div className="card max-w-sm text-center p-8">
+          <div className="w-11 h-11 rounded-2xl bg-warnlt text-warn mx-auto mb-4 flex items-center justify-center text-[19px] font-semibold">
+            !
+          </div>
+          <h1 className="text-navy text-[17px] font-semibold mb-2">Sin acceso</h1>
+          <p className="text-gray-500 text-[13.5px]">
             Tu cuenta ({user.email}) inició sesión correctamente, pero no está en la
             lista de usuarios autorizados de Formly. Pide a un administrador que te
             agregue en la tabla <code>allowed_users</code>.
@@ -34,9 +37,9 @@ export default async function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-cream">
       <Sidebar email={user.email} />
-      <div className="flex-1 min-w-0 px-7 py-6 pb-16">{children}</div>
+      <div className="flex-1 min-w-0 px-8 py-7 pb-16">{children}</div>
     </div>
   );
 }

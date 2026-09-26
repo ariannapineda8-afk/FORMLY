@@ -60,80 +60,82 @@ export default function ResponsesPage({ params }) {
 
   return (
     <div>
-      <h1 className="text-[21px] text-navy mb-1">Respuestas</h1>
-      <p className="text-gray-500 text-[13px] mb-4">{form?.title}</p>
+      <h1 className="page-title">Respuestas</h1>
+      <p className="page-subtitle mb-5">{form?.title}</p>
 
-      <div className="flex gap-2.5 mb-3.5 flex-wrap">
+      <div className="flex gap-2.5 mb-4 flex-wrap">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar en respuestas..."
-          className="flex-1 min-w-[180px] px-2.5 py-2 border border-gray-200 rounded-lg"
+          className="input flex-1 min-w-[180px]"
         />
-        <button onClick={exportCsv} className="px-4 py-2 border border-gray-200 rounded-lg text-[13px] bg-white">
+        <button onClick={exportCsv} className="btn btn-outline">
           Exportar CSV
         </button>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-gray-500 text-center py-16">
-          Este formulario aún no tiene respuestas registradas.
-        </p>
+        <div className="card empty-state">
+          <div className="dot">◇</div>
+          <p className="text-gray-500 text-[13px]">
+            Este formulario aún no tiene respuestas registradas.
+          </p>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-[11.5px] uppercase">
-                <th className="text-left px-3.5 py-2.5">Fecha</th>
-                {cols.map((c) => (
-                  <th key={c.id} className="text-left px-3.5 py-2.5 whitespace-nowrap">
-                    {c.label || c.type}
-                  </th>
-                ))}
-                <th className="text-left px-3.5 py-2.5 whitespace-nowrap">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id} className="border-b border-gray-100 last:border-none text-[13px]">
-                  <td className="px-3.5 py-2.5 whitespace-nowrap">
-                    {new Date(r.submitted_at).toLocaleString()}
-                  </td>
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th className="whitespace-nowrap">Fecha</th>
                   {cols.map((c) => (
-                    <td key={c.id} className="px-3.5 py-2.5">
-                      {c.type === "archivo" || c.type === "firma" ? (
-                        r.data[c.id] ? (
-                          <a href={r.data[c.id]} target="_blank" className="text-blue underline">
-                            Ver archivo
-                          </a>
-                        ) : (
-                          "—"
-                        )
-                      ) : (
-                        String(r.data[c.id] ?? "—")
-                      )}
-                    </td>
+                    <th key={c.id} className="whitespace-nowrap">
+                      {c.label || c.type}
+                    </th>
                   ))}
-                  <td className="px-3.5 py-2.5 whitespace-nowrap">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setPreviewResponse(r)}
-                        className="px-2.5 py-1.5 rounded-lg text-[12px] border border-gray-200 bg-white hover:bg-gray-50"
-                      >
-                        Ver
-                      </button>
-                      <button
-                        onClick={() => downloadResponsePdf(form, r, form?.fields || [])}
-                        className="px-2.5 py-1.5 rounded-lg text-[12px] bg-navy text-white hover:opacity-90"
-                      >
-                        PDF
-                      </button>
-                    </div>
-                  </td>
+                  <th className="whitespace-nowrap">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((r) => (
+                  <tr key={r.id}>
+                    <td className="whitespace-nowrap text-gray-500">
+                      {new Date(r.submitted_at).toLocaleString()}
+                    </td>
+                    {cols.map((c) => (
+                      <td key={c.id}>
+                        {c.type === "archivo" || c.type === "firma" ? (
+                          r.data[c.id] ? (
+                            <a href={r.data[c.id]} target="_blank" className="text-blue underline">
+                              Ver archivo
+                            </a>
+                          ) : (
+                            "—"
+                          )
+                        ) : (
+                          String(r.data[c.id] ?? "—")
+                        )}
+                      </td>
+                    ))}
+                    <td className="whitespace-nowrap">
+                      <div className="flex gap-2">
+                        <button onClick={() => setPreviewResponse(r)} className="btn-sm">
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => downloadResponsePdf(form, r, form?.fields || [])}
+                          className="btn-sm !bg-navy !text-white !border-navy hover:!bg-navy2"
+                        >
+                          PDF
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
