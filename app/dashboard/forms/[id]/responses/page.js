@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import ResponsePreview from "@/components/ResponsePreview";
+import { downloadResponsePdf } from "@/lib/pdf";
 
 export default function ResponsesPage({ params }) {
   const supabase = createClient();
@@ -9,6 +11,7 @@ export default function ResponsesPage({ params }) {
   const [responses, setResponses] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [previewResponse, setPreviewResponse] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -87,6 +90,7 @@ export default function ResponsesPage({ params }) {
                     {c.label || c.type}
                   </th>
                 ))}
+                <th className="text-left px-3.5 py-2.5 whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -110,12 +114,35 @@ export default function ResponsesPage({ params }) {
                       )}
                     </td>
                   ))}
+                  <td className="px-3.5 py-2.5 whitespace-nowrap">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setPreviewResponse(r)}
+                        className="px-2.5 py-1.5 rounded-lg text-[12px] border border-gray-200 bg-white hover:bg-gray-50"
+                      >
+                        Ver
+                      </button>
+                      <button
+                        onClick={() => downloadResponsePdf(form, r, form?.fields || [])}
+                        className="px-2.5 py-1.5 rounded-lg text-[12px] bg-navy text-white hover:opacity-90"
+                      >
+                        PDF
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <ResponsePreview
+        form={form}
+        response={previewResponse}
+        fields={form?.fields || []}
+        onClose={() => setPreviewResponse(null)}
+      />
     </div>
   );
 }
