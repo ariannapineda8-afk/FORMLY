@@ -13,6 +13,7 @@ import {
   fmtStyle,
 } from "@/lib/fields";
 import { FieldBadge, GripIcon } from "@/components/FieldIcon";
+import { explainError } from "@/lib/errors";
 
 function slugify(text) {
   return (
@@ -343,13 +344,14 @@ export default function FormBuilder({ formId }) {
       updated_at: new Date(),
     };
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     let error;
     if (formId) {
       ({ error } = await supabase.from("forms").update(payload).eq("id", formId));
     } else {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       ({ error } = await supabase.from("forms").insert({
         ...payload,
         slug: slugify(title),
@@ -358,7 +360,7 @@ export default function FormBuilder({ formId }) {
     }
     setSaving(false);
     if (error) {
-      alert("No se pudo guardar: " + error.message);
+      alert(explainError(error, user?.email));
       return;
     }
     router.push("/dashboard/forms");

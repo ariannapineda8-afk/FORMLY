@@ -66,7 +66,7 @@ export default function PublicForm({ form }) {
               src="/mardom-logo.png"
               alt="MARDOM"
               onError={() => setLogoOk(false)}
-              className="h-12 w-auto mx-auto mb-5"
+              className="h-20 w-auto mx-auto mb-6"
             />
           )}
           <div className="w-12 h-12 rounded-full mx-auto mb-4" style={{ background: color }} />
@@ -84,13 +84,15 @@ export default function PublicForm({ form }) {
             src="/mardom-logo.png"
             alt="MARDOM"
             onError={() => setLogoOk(false)}
-            className="h-14 w-auto mb-5"
+            className="h-20 w-auto mx-auto mb-6"
           />
         )}
         <h1 className="text-[20px] mb-1.5" style={{ color }}>
           {form.title}
         </h1>
-        {form.description && <p className="text-gray-500 text-[13px] mb-5">{form.description}</p>}
+        {form.description && (
+          <p className="text-gray-500 text-[13px] mb-5 whitespace-pre-line">{form.description}</p>
+        )}
 
         {(form.fields || []).map((f) => (
           <FieldRenderer

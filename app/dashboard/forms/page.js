@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { explainError } from "@/lib/errors";
 
 export default function FormsListPage() {
   const supabase = createClient();
@@ -33,18 +34,20 @@ export default function FormsListPage() {
     if (!full) return;
     const slug = full.slug + "-copia-" + Math.random().toString(36).slice(2, 6);
     const { id, created_at, updated_at, ...rest } = full;
-    await supabase.from("forms").insert({
+    const { error } = await supabase.from("forms").insert({
       ...rest,
       title: full.title + " (copia)",
       slug,
       status: "borrador",
     });
+    if (error) return alert(explainError(error));
     load();
   }
 
   async function toggleStatus(form) {
     const next = form.status === "activo" ? "inactivo" : "activo";
-    await supabase.from("forms").update({ status: next, updated_at: new Date() }).eq("id", form.id);
+    const { error } = await supabase.from("forms").update({ status: next, updated_at: new Date() }).eq("id", form.id);
+    if (error) return alert(explainError(error));
     load();
   }
 
