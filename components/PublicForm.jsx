@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
+import { parseOptions, fmtStyle } from "@/lib/fields";
 
 export default function PublicForm({ form }) {
   const supabase = createClient();
@@ -10,6 +11,7 @@ export default function PublicForm({ form }) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [logoOk, setLogoOk] = useState(true);
 
   function setValue(id, val) {
     setValues((v) => ({ ...v, [id]: val }));
@@ -59,6 +61,14 @@ export default function PublicForm({ form }) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-md text-center">
+          {logoOk && (
+            <img
+              src="/mardom-logo.png"
+              alt="MARDOM"
+              onError={() => setLogoOk(false)}
+              className="h-12 w-auto mx-auto mb-5"
+            />
+          )}
           <div className="w-12 h-12 rounded-full mx-auto mb-4" style={{ background: color }} />
           <p className="text-[15px]">{form.thanks_message}</p>
         </div>
@@ -69,6 +79,14 @@ export default function PublicForm({ form }) {
   return (
     <div className="min-h-screen flex items-start justify-center p-6 md:p-10">
       <form onSubmit={handleSubmit} className="bg-white rounded-xl max-w-[520px] w-full p-7 md:p-8">
+        {logoOk && (
+          <img
+            src="/mardom-logo.png"
+            alt="MARDOM"
+            onError={() => setLogoOk(false)}
+            className="h-14 w-auto mb-5"
+          />
+        )}
         <h1 className="text-[20px] mb-1.5" style={{ color }}>
           {form.title}
         </h1>
@@ -101,21 +119,25 @@ export default function PublicForm({ form }) {
 }
 
 function FieldRenderer({ field, value, onChange, onUpload, color }) {
-  const opts = (field.options || "").split(",").map((o) => o.trim()).filter(Boolean);
+  const opts = parseOptions(field.options).map((o) => o.trim()).filter(Boolean);
 
   if (field.type === "info") {
-    return <div className="text-gray-500 text-[13.5px] mb-4">{field.label}</div>;
+    return (
+      <div className="text-gray-500 text-[13.5px] mb-4 whitespace-pre-line" style={fmtStyle(field.fmt)}>
+        {field.label}
+      </div>
+    );
   }
   if (field.type === "seccion") {
     return (
-      <h3 className="text-[15px] mt-5 mb-2" style={{ color }}>
+      <h3 className="text-[15px] mt-5 mb-2" style={{ color, ...fmtStyle(field.fmt) }}>
         {field.label}
       </h3>
     );
   }
 
   const label = (
-    <label className="block text-[13px] font-medium mb-1.5">
+    <label className="block text-[13px] font-medium mb-1.5" style={fmtStyle(field.fmt)}>
       {field.label} {field.required && <span className="text-[#B23A3A]">*</span>}
     </label>
   );

@@ -9,6 +9,7 @@ const ITEMS = [
   { href: "/dashboard", label: "Inicio", icon: "home" },
   { href: "/dashboard/forms", label: "Formularios", icon: "forms" },
   { href: "/dashboard/forms/new", label: "Crear formulario", icon: "plus" },
+  { href: "/dashboard/papelera", label: "Papelera", icon: "trash" },
 ];
 
 function Icon({ name }) {
@@ -34,6 +35,13 @@ function Icon({ name }) {
       <svg {...common}>
         <circle cx="12" cy="12" r="8.5" />
         <path d="M12 8.5v7M8.5 12h7" />
+      </svg>
+    );
+  }
+  if (name === "trash") {
+    return (
+      <svg {...common}>
+        <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13" />
       </svg>
     );
   }

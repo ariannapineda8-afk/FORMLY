@@ -4,10 +4,11 @@ import Link from "next/link";
 export default async function DashboardHome() {
   const supabase = createClient();
 
-  const { data: forms } = await supabase
+  const { data: allForms } = await supabase
     .from("forms")
-    .select("id, title, status, created_at")
+    .select("*")
     .order("created_at", { ascending: false });
+  const forms = (allForms || []).filter((f) => !f.deleted_at);
 
   const { count: totalResponses } = await supabase
     .from("form_responses")
@@ -24,23 +25,23 @@ export default async function DashboardHome() {
       <p className="page-subtitle mb-6">Un vistazo rápido a tus formularios y respuestas.</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
-        <div className="card p-4.5">
+        <div className="card p-5">
           <p className="text-[12px] text-gray-500 mb-2">Respuestas totales</p>
           <div className="font-display text-navy text-[28px] font-semibold leading-none">
             {totalResponses || 0}
           </div>
         </div>
-        <div className="card p-4.5">
+        <div className="card p-5">
           <p className="text-[12px] text-gray-500 mb-2">Formularios totales</p>
           <div className="font-display text-navy text-[28px] font-semibold leading-none">{all.length}</div>
         </div>
-        <div className="card p-4.5">
+        <div className="card p-5">
           <p className="text-[12px] text-gray-500 mb-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-mint inline-block" /> Activos
           </p>
           <div className="font-display text-mint text-[28px] font-semibold leading-none">{activos}</div>
         </div>
-        <div className="card p-4.5">
+        <div className="card p-5">
           <p className="text-[12px] text-gray-500 mb-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-warn inline-block" /> En borrador
           </p>
