@@ -12,18 +12,45 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleLogin(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+
+    const cleanEmail = email.trim().toLowerCase();
+    let { error: signInError } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
       password,
     });
+
+    // Si falla por credenciales y la contraseña tenía espacios al inicio/final
+    // (típico al copiar y pegar), reintenta sin ellos.
+    if (
+      signInError &&
+      signInError.code === "invalid_credentials" &&
+      password !== password.trim()
+    ) {
+      ({ error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: password.trim(),
+      }));
+    }
+
     setLoading(false);
+
     if (signInError) {
-      setError("Correo o contraseña incorrectos.");
+      const code = signInError.code || "";
+      if (signInError.status === 429 || code === "over_request_rate_limit") {
+        setError("Demasiados intentos desde esta red. Espera unos minutos e inténtalo de nuevo.");
+      } else if (code === "email_not_confirmed") {
+        setError("Este correo aún no está confirmado en el sistema.");
+      } else if (code === "invalid_credentials") {
+        setError("Correo o contraseña incorrectos. Recuerda que la contraseña distingue mayúsculas y minúsculas.");
+      } else {
+        setError("No se pudo iniciar sesión: " + (signInError.message || "error desconocido"));
+      }
       return;
     }
     router.push("/dashboard");
@@ -49,6 +76,9 @@ export default function LoginPage() {
             <input
               type="email"
               required
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nombre@mardom.com"
@@ -57,14 +87,26 @@ export default function LoginPage() {
           </div>
           <div className="mb-5">
             <label className="block text-[12.5px] text-gray-500 mb-1">Contraseña</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="input"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="input pr-16"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-blue hover:text-navy"
+              >
+                {showPassword ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
           </div>
 
           <button type="submit" disabled={loading} className="btn btn-primary w-full">
