@@ -40,6 +40,14 @@ function Icon({ name }) {
       </svg>
     );
   }
+  if (name === "responses") {
+    return (
+      <svg {...common}>
+        <path d="M4 4.5h13l3 3V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1z" />
+        <path d="M8 10.5 10.5 13 16 7.5" />
+      </svg>
+    );
+  }
   return null;
 }
 
@@ -53,6 +61,7 @@ export default function Sidebar({ email, role = "admin" }) {
   const items = [
     { href: "/dashboard", label: "Inicio", icon: "home" },
     { href: "/dashboard/forms", label: "Formularios", icon: "forms" },
+    { href: "/dashboard/respuestas", label: "Respuestas", icon: "responses" },
     canEdit && { href: "/dashboard/forms/new", label: "Crear formulario", icon: "plus" },
     role === "admin" && { href: "/dashboard/usuarios", label: "Usuarios", icon: "users" },
   ].filter(Boolean);
