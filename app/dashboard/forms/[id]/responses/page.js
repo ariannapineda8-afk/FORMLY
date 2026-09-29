@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ResponsePreview from "@/components/ResponsePreview";
 import { downloadResponsePdf } from "@/lib/pdf";
+import ResponseCharts from "@/components/ResponseCharts";
 
 export default function ResponsesPage({ params }) {
   const supabase = createClient();
@@ -62,6 +63,8 @@ export default function ResponsesPage({ params }) {
     <div>
       <h1 className="page-title">Respuestas</h1>
       <p className="page-subtitle mb-5">{form?.title}</p>
+
+      <ResponseCharts fields={cols} responses={responses} />
 
       <div className="flex gap-2.5 mb-4 flex-wrap">
         <input

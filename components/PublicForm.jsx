@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
 import { parseOptions, fmtStyle } from "@/lib/fields";
+import { visibleFieldIds } from "@/lib/logic";
 
-export default function PublicForm({ form }) {
+export default function PublicForm({ form, preview = false }) {
   const supabase = createClient();
   const [values, setValues] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -19,6 +20,10 @@ export default function PublicForm({ form }) {
 
   async function uploadFile(id, file) {
     if (!file) return;
+    if (preview) {
+      setValue(id, "vista-previa");
+      return;
+    }
     const name = file.name || "firma.png";
     const path = `${form.id}/${Date.now()}-${name}`;
     const { error: upErr } = await supabase.storage.from("form-uploads").upload(path, file);
@@ -33,19 +38,30 @@ export default function PublicForm({ form }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    const shown = visibleFieldIds(form.fields, values);
     const required = (form.fields || []).filter(
-      (f) => f.required && f.type !== "seccion" && f.type !== "info"
+      (f) => shown.has(f.id) && f.required && f.type !== "seccion" && f.type !== "info"
     );
     for (const f of required) {
-      if (!values[f.id]) {
+      const v = values[f.id];
+      if (!v || (Array.isArray(v) && v.length === 0)) {
         setError(`Por favor completa: ${f.label || "campo obligatorio"}`);
         return;
       }
     }
+    if (preview) {
+      setDone(true);
+      return;
+    }
+    // Solo se guardan las respuestas de los campos que estaban visibles.
+    const data = {};
+    for (const f of form.fields || []) {
+      if (shown.has(f.id) && values[f.id] !== undefined) data[f.id] = values[f.id];
+    }
     setSubmitting(true);
     const { error: insErr } = await supabase.from("form_responses").insert({
       form_id: form.id,
-      data: values,
+      data,
     });
     setSubmitting(false);
     if (insErr) {
@@ -56,11 +72,12 @@ export default function PublicForm({ form }) {
   }
 
   const color = form.color || "#12294D";
+  const shownIds = visibleFieldIds(form.fields, values);
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md text-center">
+      <div className={preview ? "py-10 px-6" : "min-h-screen flex items-center justify-center p-6"}>
+        <div className="max-w-md text-center mx-auto">
           {logoOk && (
             <img
               src="/mardom-logo.png"
@@ -71,13 +88,25 @@ export default function PublicForm({ form }) {
           )}
           <div className="w-12 h-12 rounded-full mx-auto mb-4" style={{ background: color }} />
           <p className="text-[15px]">{form.thanks_message}</p>
+          {preview && (
+            <button
+              type="button"
+              onClick={() => {
+                setDone(false);
+                setValues({});
+              }}
+              className="mt-5 text-[13px] text-blue underline"
+            >
+              Volver a probar el formulario
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center p-6 md:p-10">
+    <div className={preview ? "flex items-start justify-center p-3 sm:p-6" : "min-h-screen flex items-start justify-center p-6 md:p-10"}>
       <form onSubmit={handleSubmit} className="bg-white rounded-xl max-w-[520px] w-full p-7 md:p-8">
         {logoOk && (
           <img
@@ -94,7 +123,7 @@ export default function PublicForm({ form }) {
           <p className="text-gray-500 text-[13px] mb-5 whitespace-pre-line">{form.description}</p>
         )}
 
-        {(form.fields || []).map((f) => (
+        {(form.fields || []).filter((f) => shownIds.has(f.id)).map((f) => (
           <FieldRenderer
             key={f.id}
             field={f}

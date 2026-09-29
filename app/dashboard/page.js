@@ -4,11 +4,10 @@ import Link from "next/link";
 export default async function DashboardHome() {
   const supabase = createClient();
 
-  const { data: allForms } = await supabase
+  const { data: forms } = await supabase
     .from("forms")
-    .select("*")
+    .select("id, title, status, created_at")
     .order("created_at", { ascending: false });
-  const forms = (allForms || []).filter((f) => !f.deleted_at);
 
   const { count: totalResponses } = await supabase
     .from("form_responses")

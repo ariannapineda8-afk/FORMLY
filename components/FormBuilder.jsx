@@ -14,6 +14,9 @@ import {
 } from "@/lib/fields";
 import { FieldBadge, GripIcon } from "@/components/FieldIcon";
 import { explainError } from "@/lib/errors";
+import { LOGIC_TRIGGER_TYPES, triggerChoices, findBrokenCondition } from "@/lib/logic";
+import { useRole } from "@/components/RoleContext";
+import PublicForm from "@/components/PublicForm";
 
 function slugify(text) {
   return (
@@ -210,21 +213,114 @@ function OptionsEditor({ type, options, onChange }) {
   );
 }
 
-export default function FormBuilder({ formId }) {
+function ConditionEditor({ field, index, fields, onChange }) {
+  const cond = field.showIf;
+  const candidates = fields.slice(0, index).filter((x) => LOGIC_TRIGGER_TYPES.includes(x.type));
+  const trigger = cond ? fields.find((x) => x.id === cond.fieldId) : null;
+  const triggerIndex = trigger ? fields.findIndex((x) => x.id === trigger.id) : -1;
+  const broken = cond && (!trigger || triggerIndex >= index);
+  const choices = trigger ? triggerChoices(trigger) : [];
+  const isMulti = trigger?.type === "multiple";
+  const labelOf = (x) => x.label?.trim() || TYPE_LABELS[x.type];
+
+  if (!cond) {
+    return (
+      <div className="mt-4 pt-3 border-t border-dashed border-[#E6E1D6]">
+        {candidates.length === 0 ? (
+          <p className="text-[11.5px] text-gray-400">
+            Para mostrar este campo solo en ciertos casos, agrega antes una pregunta de selección, Sí/No o escala.
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              const first = candidates[candidates.length - 1];
+              onChange({ fieldId: first.id, op: "eq", value: triggerChoices(first)[0] ?? "" });
+            }}
+            className="text-[12.5px] font-medium text-blue hover:text-navy"
+          >
+            + Mostrar este campo solo si...
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 pt-3 border-t border-dashed border-[#E6E1D6]">
+      <p className="text-[11.5px] font-semibold text-off mb-2">Mostrar este campo solo si</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={cond.fieldId}
+          onChange={(e) => {
+            const t = fields.find((x) => x.id === e.target.value);
+            onChange({ fieldId: e.target.value, op: "eq", value: t ? triggerChoices(t)[0] ?? "" : "" });
+          }}
+          className="input !py-1.5 !w-auto max-w-[260px] text-[12.5px]"
+        >
+          {!trigger && <option value={cond.fieldId}>(pregunta no disponible)</option>}
+          {candidates.map((x) => (
+            <option key={x.id} value={x.id}>
+              {labelOf(x)}
+            </option>
+          ))}
+          {trigger && triggerIndex >= index && <option value={trigger.id}>{labelOf(trigger)}</option>}
+        </select>
+        <select
+          value={cond.op || "eq"}
+          onChange={(e) => onChange({ ...cond, op: e.target.value })}
+          className="input !py-1.5 !w-auto text-[12.5px]"
+        >
+          <option value="eq">{isMulti ? "incluye" : "es igual a"}</option>
+          <option value="not">{isMulti ? "no incluye" : "es distinto de"}</option>
+        </select>
+        <select
+          value={cond.value}
+          onChange={(e) => onChange({ ...cond, value: e.target.value })}
+          className="input !py-1.5 !w-auto max-w-[220px] text-[12.5px]"
+        >
+          {!choices.includes(cond.value) && <option value={cond.value}>{cond.value || "(elige una opción)"}</option>}
+          {choices.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          className="text-[12px] text-gray-500 hover:text-[#B23A3A]"
+        >
+          Quitar condición
+        </button>
+      </div>
+      {broken && (
+        <p className="text-[11.5px] text-[#B23A3A] mt-2">
+          Esta condición depende de una pregunta que ya no está arriba de este campo. Muévela o cambia la condición.
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function FormBuilder({ formId, initial }) {
   const supabase = createClient();
   const router = useRouter();
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [buttonText, setButtonText] = useState("Enviar");
+  const [title, setTitle] = useState(initial?.title || "");
+  const [description, setDescription] = useState(initial?.description || "");
+  const [buttonText, setButtonText] = useState(initial?.buttonText || "Enviar");
   const [thanksMessage, setThanksMessage] = useState(
-    "Gracias por completar el formulario. Nos pondremos en contacto pronto."
+    initial?.thanksMessage || "Gracias por completar el formulario. Nos pondremos en contacto pronto."
   );
   const [color, setColor] = useState("#12294D");
   const [status, setStatus] = useState("borrador");
-  const [fields, setFields] = useState([]);
+  const [fields, setFields] = useState(initial?.fields || []);
   const [slug, setSlug] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [device, setDevice] = useState("desktop");
+  const { role } = useRole();
   const [dragField, setDragField] = useState(null);
   const [overField, setOverField] = useState(null);
   const focusId = useRef(null);
@@ -278,7 +374,11 @@ export default function FormBuilder({ formId }) {
     setFields((f) => f.map((x) => (x.id === id ? { ...x, [key]: val } : x)));
   }
   function removeField(id) {
-    setFields((f) => f.filter((x) => x.id !== id));
+    setFields((f) =>
+      f
+        .filter((x) => x.id !== id)
+        .map((x) => (x.showIf?.fieldId === id ? { ...x, showIf: undefined } : x))
+    );
   }
   function duplicateField(id) {
     setFields((f) => {
@@ -332,6 +432,13 @@ export default function FormBuilder({ formId }) {
       alert(`El campo "${bad.label || TYPE_LABELS[bad.type]}" necesita al menos una opción.`);
       return;
     }
+    const broken = findBrokenCondition(cleanFields);
+    if (broken) {
+      alert(
+        `La condición del campo "${broken.label || TYPE_LABELS[broken.type]}" depende de una pregunta que no está arriba de él. Muévela o cambia la condición.`
+      );
+      return;
+    }
     setSaving(true);
     const payload = {
       title,
@@ -372,6 +479,30 @@ export default function FormBuilder({ formId }) {
     navigator.clipboard?.writeText(url);
     alert("Enlace copiado:\n" + url);
   }
+
+  if (role === "lectura") {
+    return (
+      <div className="card p-6 max-w-md">
+        <h3 className="text-navy font-semibold mb-1">Tu rol es de solo lectura</h3>
+        <p className="text-gray-500 text-[13px]">
+          Puedes ver formularios y respuestas, pero no crear ni editar. Pide a un administrador que cambie tu rol a
+          Editor si lo necesitas.
+        </p>
+      </div>
+    );
+  }
+
+  const previewForm = {
+    id: "preview",
+    title: title || "Título del formulario",
+    description,
+    button_text: buttonText,
+    thanks_message: thanksMessage,
+    color,
+    fields: fields.map((f) =>
+      OPTION_TYPES.includes(f.type) ? { ...f, options: parseOptions(f.options).filter((o) => o.trim()) } : f
+    ),
+  };
 
   return (
     <div className="grid grid-cols-[1fr_330px] gap-5 items-start max-[900px]:grid-cols-1">
@@ -460,6 +591,11 @@ export default function FormBuilder({ formId }) {
                 </p>
                 <p className="text-[11px] text-gray-500 truncate hidden sm:block">{TYPE_HINTS[f.type]}</p>
               </div>
+              {f.showIf && (
+                <span className="text-[10.5px] font-semibold text-[#6B4FA3] bg-[#EFEAF8] rounded-full px-2 py-0.5">
+                  Condicional
+                </span>
+              )}
               <div className="ml-auto flex items-center gap-1">
                 {f.type !== "seccion" && f.type !== "info" && (
                   <button
@@ -537,12 +673,18 @@ export default function FormBuilder({ formId }) {
                   onChange={(v) => updateField(f.id, "options", v)}
                 />
               )}
+              <ConditionEditor
+                field={f}
+                index={idx}
+                fields={fields}
+                onChange={(v) => updateField(f.id, "showIf", v)}
+              />
             </div>
           </div>
         ))}
       </div>
 
-      <div className="min-[901px]:sticky min-[901px]:top-3">
+      <div className="min-[901px]:sticky min-[901px]:top-[76px]">
         <div className="card p-5">
           <h3 className="text-[14.5px] text-navy font-semibold mb-3.5">Detalles del formulario</h3>
           <Field label="Título">
@@ -590,7 +732,10 @@ export default function FormBuilder({ formId }) {
           </Field>
         </div>
 
-        <button onClick={save} disabled={saving} className="btn btn-primary w-full mt-3.5 !py-3">
+        <button type="button" onClick={() => setShowPreview(true)} className="btn btn-outline w-full mt-3.5">
+          Vista previa
+        </button>
+        <button onClick={save} disabled={saving} className="btn btn-primary w-full mt-2.5 !py-3">
           {saving ? "Guardando..." : "Guardar formulario"}
         </button>
 
@@ -613,6 +758,49 @@ export default function FormBuilder({ formId }) {
           </div>
         )}
       </div>
+
+      {showPreview && (
+        <div className="fixed inset-0 z-50 bg-black/45 flex flex-col" onClick={() => setShowPreview(false)}>
+          <div
+            className="bg-white flex items-center gap-3 px-4 py-3 border-b border-[#ECE7DE] flex-wrap"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <p className="text-[14px] font-semibold text-navy leading-tight">Vista previa</p>
+              <p className="text-[11.5px] text-gray-500">Así lo verá quien responde. Puedes probarlo; nada se guarda.</p>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <div className="flex rounded-xl border border-[#E4E7EC] overflow-hidden text-[12.5px]">
+                {[
+                  ["desktop", "Computadora"],
+                  ["mobile", "Celular"],
+                ].map(([k, l]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setDevice(k)}
+                    className={`px-3 py-1.5 ${device === k ? "bg-navy text-white" : "bg-white text-navy hover:bg-[#F7F5F1]"}`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={() => setShowPreview(false)} className="btn btn-navy !py-1.5">
+                Cerrar
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto bg-cream py-5 px-3" onClick={(e) => e.stopPropagation()}>
+            <div
+              className={`mx-auto transition-all ${
+                device === "mobile" ? "max-w-[390px] rounded-[28px] border-[10px] border-navy overflow-hidden bg-cream" : "max-w-[720px]"
+              }`}
+            >
+              <PublicForm form={previewForm} preview />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

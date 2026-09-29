@@ -13,15 +13,11 @@ export default function FormsListPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    // Limpia de la papelera lo que lleve más de 30 días (si la columna aún no existe, se ignora).
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    await supabase.from("forms").delete().lt("deleted_at", cutoff);
-
     const { data } = await supabase
       .from("forms")
       .select("*")
       .order("updated_at", { ascending: false });
-    setForms((data || []).filter((f) => !f.deleted_at));
+    setForms(data || []);
     setLoading(false);
   }, [supabase]);
 
@@ -52,18 +48,9 @@ export default function FormsListPage() {
   }
 
   async function remove(form) {
-    if (!confirm("¿Mover este formulario a la papelera?\nPodrás restaurarlo durante 30 días.")) return;
-    const { error } = await supabase
-      .from("forms")
-      .update({ deleted_at: new Date().toISOString(), status: "inactivo" })
-      .eq("id", form.id);
-    if (error) {
-      alert(
-        "No se pudo mover a la papelera. Falta activar la papelera en la base de datos (paso único).\n\nDetalle: " +
-          error.message
-      );
-      return;
-    }
+    if (!confirm("¿Eliminar este formulario? Esta acción no se puede deshacer.")) return;
+    const { error } = await supabase.from("forms").delete().eq("id", form.id);
+    if (error) return alert(explainError(error));
     load();
   }
 
@@ -149,7 +136,7 @@ export default function FormsListPage() {
                   {f.status === "activo" ? "Desactivar" : "Activar"}
                 </button>
                 <button onClick={() => copyLink(f.slug)} className="btn-sm">Copiar enlace</button>
-                <button onClick={() => remove(f)} className="btn-sm">A la papelera</button>
+                <button onClick={() => remove(f)} className="btn-sm">Eliminar</button>
               </div>
             </div>
           ))}
