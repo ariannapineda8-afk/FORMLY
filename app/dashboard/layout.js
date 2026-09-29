@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import TopNav from "@/components/TopNav";
+import Sidebar from "@/components/Sidebar";
 import { RoleProvider } from "@/components/RoleContext";
 import SignOutButton from "@/components/SignOutButton";
 
@@ -41,9 +41,11 @@ export default async function DashboardLayout({ children }) {
 
   return (
     <RoleProvider role={role} email={user.email}>
-      <div className="min-h-screen bg-cream">
-        <TopNav email={user.email} role={role} />
-        <main className="max-w-[1240px] mx-auto px-4 sm:px-6 py-7 pb-20">{children}</main>
+      <div className="flex min-h-screen bg-cream p-3 gap-3">
+        <Sidebar email={user.email} role={role} />
+        <div className="flex-1 min-w-0 bg-white border border-[#ECE7DE] rounded-2xl px-8 py-7 pb-16 shadow-[0_1px_3px_rgba(18,41,77,0.05)]">
+          {children}
+        </div>
       </div>
     </RoleProvider>
   );
