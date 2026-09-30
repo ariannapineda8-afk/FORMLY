@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,43 +17,18 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
-    const cleanEmail = email.trim().toLowerCase();
-    let { error: signInError } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
-    });
-
-    // Si falla por credenciales y la contraseña tenía espacios al inicio/final
-    // (típico al copiar y pegar), reintenta sin ellos.
-    if (
-      signInError &&
-      signInError.code === "invalid_credentials" &&
-      password !== password.trim()
-    ) {
-      ({ error: signInError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: password.trim(),
-      }));
+    try {
+      await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      });
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-
-    if (signInError) {
-      const code = signInError.code || "";
-      if (signInError.status === 429 || code === "over_request_rate_limit") {
-        setError("Demasiados intentos desde esta red. Espera unos minutos e inténtalo de nuevo.");
-      } else if (code === "email_not_confirmed") {
-        setError("Este correo aún no está confirmado en el sistema.");
-      } else if (code === "invalid_credentials") {
-        setError("Correo o contraseña incorrectos. Recuerda que la contraseña distingue mayúsculas y minúsculas.");
-      } else {
-        setError("No se pudo iniciar sesión: " + (signInError.message || "error desconocido"));
-      }
-      return;
-    }
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (

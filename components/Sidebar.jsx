@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api";
 
 function Icon({ name }) {
   const common = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
@@ -54,7 +54,6 @@ function Icon({ name }) {
 export default function Sidebar({ email, role = "admin" }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
   const initials = (email || "?").slice(0, 2).toUpperCase();
   const canEdit = role === "admin" || role === "editor";
 
@@ -67,7 +66,9 @@ export default function Sidebar({ email, role = "admin" }) {
   ].filter(Boolean);
 
   async function logout() {
-    await supabase.auth.signOut();
+    try {
+      await apiFetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {}
     router.push("/login");
     router.refresh();
   }

@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { explainError } from "@/lib/errors";
+import { apiFetch } from "@/lib/api";
 import { useRole } from "@/components/RoleContext";
 
 const ROLES = [
@@ -12,7 +11,6 @@ const ROLES = [
 ];
 
 export default function UsersPage() {
-  const supabase = createClient();
   const { role: myRole, email: myEmail } = useRole();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,15 +21,15 @@ export default function UsersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("allowed_users").select("*").order("email");
-    if (error) {
-      setNeedsSetup(true);
-    } else {
+    try {
+      const { users } = await apiFetch("/api/users");
       setNeedsSetup(false);
-      setUsers(data || []);
+      setUsers(users || []);
+    } catch (err) {
+      setNeedsSetup(true);
     }
     setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -42,17 +40,24 @@ export default function UsersPage() {
     const email = newEmail.trim().toLowerCase();
     if (!email) return;
     setAdding(true);
-    const { error } = await supabase.from("allowed_users").insert({ email, role: newRole });
-    setAdding(false);
-    if (error) return alert(explainError(error));
-    setNewEmail("");
-    load();
+    try {
+      await apiFetch("/api/users", { method: "POST", body: JSON.stringify({ email, role: newRole }) });
+      setNewEmail("");
+      load();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setAdding(false);
+    }
   }
 
   async function changeRole(u, role) {
-    const { error } = await supabase.from("allowed_users").update({ role }).eq("email", u.email);
-    if (error) return alert(explainError(error));
-    load();
+    try {
+      await apiFetch("/api/users/update-role", { method: "POST", body: JSON.stringify({ email: u.email, role }) });
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   async function removeUser(u) {
@@ -61,9 +66,12 @@ export default function UsersPage() {
       return;
     }
     if (!confirm(`¿Quitar el acceso de ${u.email}?`)) return;
-    const { error } = await supabase.from("allowed_users").delete().eq("email", u.email);
-    if (error) return alert(explainError(error));
-    load();
+    try {
+      await apiFetch("/api/users/remove", { method: "POST", body: JSON.stringify({ email: u.email }) });
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   return (

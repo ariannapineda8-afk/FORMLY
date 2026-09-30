@@ -1,13 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
 import { parseOptions, fmtStyle } from "@/lib/fields";
 import { visibleFieldIds } from "@/lib/logic";
 
 export default function PublicForm({ form, preview = false }) {
-  const supabase = createClient();
   const [values, setValues] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -24,15 +22,17 @@ export default function PublicForm({ form, preview = false }) {
       setValue(id, "vista-previa");
       return;
     }
-    const name = file.name || "firma.png";
-    const path = `${form.id}/${Date.now()}-${name}`;
-    const { error: upErr } = await supabase.storage.from("form-uploads").upload(path, file);
-    if (upErr) {
-      setError("No se pudo subir el archivo: " + upErr.message);
-      return;
+    try {
+      const fd = new FormData();
+      fd.append("file", file, file.name || "firma.png");
+      fd.append("formId", form.id);
+      const res = await fetch("/api/public/upload", { method: "POST", body: fd });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error || "No se pudo subir el archivo.");
+      setValue(id, body.url);
+    } catch (err) {
+      setError(err.message || "No se pudo subir el archivo. Intenta de nuevo.");
     }
-    const { data } = supabase.storage.from("form-uploads").getPublicUrl(path);
-    setValue(id, data.publicUrl);
   }
 
   async function handleSubmit(e) {
@@ -59,16 +59,20 @@ export default function PublicForm({ form, preview = false }) {
       if (shown.has(f.id) && values[f.id] !== undefined) data[f.id] = values[f.id];
     }
     setSubmitting(true);
-    const { error: insErr } = await supabase.from("form_responses").insert({
-      form_id: form.id,
-      data,
-    });
-    setSubmitting(false);
-    if (insErr) {
-      setError("No se pudo enviar el formulario. Intenta de nuevo.");
-      return;
+    try {
+      const res = await fetch(`/api/public/forms/${form.slug}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error || "No se pudo enviar el formulario.");
+      setDone(true);
+    } catch (err) {
+      setError(err.message || "No se pudo enviar el formulario. Intenta de nuevo.");
+    } finally {
+      setSubmitting(false);
     }
-    setDone(true);
   }
 
   const color = form.color || "#12294D";

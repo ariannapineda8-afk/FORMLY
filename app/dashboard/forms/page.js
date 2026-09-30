@@ -2,56 +2,55 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { explainError } from "@/lib/errors";
+import { apiFetch } from "@/lib/api";
 
 export default function FormsListPage() {
-  const supabase = createClient();
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("forms")
-      .select("*")
-      .order("updated_at", { ascending: false });
-    setForms(data || []);
+    try {
+      const { forms } = await apiFetch("/api/forms");
+      setForms(forms || []);
+    } catch (err) {
+      alert(err.message);
+    }
     setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function duplicate(form) {
-    const { data: full } = await supabase.from("forms").select("*").eq("id", form.id).single();
-    if (!full) return;
-    const slug = full.slug + "-copia-" + Math.random().toString(36).slice(2, 6);
-    const { id, created_at, updated_at, ...rest } = full;
-    const { error } = await supabase.from("forms").insert({
-      ...rest,
-      title: full.title + " (copia)",
-      slug,
-      status: "borrador",
-    });
-    if (error) return alert(explainError(error));
-    load();
+    try {
+      await apiFetch(`/api/forms/${form.id}/duplicate`, { method: "POST" });
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   async function toggleStatus(form) {
     const next = form.status === "activo" ? "inactivo" : "activo";
-    const { error } = await supabase.from("forms").update({ status: next, updated_at: new Date() }).eq("id", form.id);
-    if (error) return alert(explainError(error));
-    load();
+    try {
+      await apiFetch(`/api/forms/${form.id}`, { method: "PATCH", body: JSON.stringify({ status: next }) });
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   async function remove(form) {
     if (!confirm("¿Eliminar este formulario? Esta acción no se puede deshacer.")) return;
-    const { error } = await supabase.from("forms").delete().eq("id", form.id);
-    if (error) return alert(explainError(error));
-    load();
+    try {
+      await apiFetch(`/api/forms/${form.id}`, { method: "DELETE" });
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   function copyLink(slug) {

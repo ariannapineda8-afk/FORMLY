@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api";
 import ResponsePreview from "@/components/ResponsePreview";
 import { downloadResponsePdf } from "@/lib/pdf";
 import ResponseCharts from "@/components/ResponseCharts";
 
 export default function ResponsesPage({ params }) {
-  const supabase = createClient();
   const [form, setForm] = useState(null);
   const [responses, setResponses] = useState([]);
   const [search, setSearch] = useState("");
@@ -17,17 +16,16 @@ export default function ResponsesPage({ params }) {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data: f } = await supabase.from("forms").select("*").eq("id", params.id).single();
-      const { data: r } = await supabase
-        .from("form_responses")
-        .select("*")
-        .eq("form_id", params.id)
-        .order("submitted_at", { ascending: false });
-      setForm(f);
-      setResponses(r || []);
+      try {
+        const { form, responses } = await apiFetch(`/api/forms/${params.id}/responses`);
+        setForm(form);
+        setResponses(responses || []);
+      } catch (err) {
+        alert(err.message);
+      }
       setLoading(false);
     })();
-  }, [params.id, supabase]);
+  }, [params.id]);
 
   const cols = useMemo(
     () => (form?.fields || []).filter((f) => f.type !== "seccion" && f.type !== "info"),

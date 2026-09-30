@@ -2,44 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api";
 
 export default function AllResponsesPage() {
-  const supabase = createClient();
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     (async () => {
-      const { data: formList } = await supabase
-        .from("forms")
-        .select("id, title, status, slug")
-        .order("title");
-
-      const { data: responseRows } = await supabase
-        .from("form_responses")
-        .select("form_id, submitted_at");
-
-      const counts = {};
-      const latest = {};
-      (responseRows || []).forEach((r) => {
-        counts[r.form_id] = (counts[r.form_id] || 0) + 1;
-        if (!latest[r.form_id] || r.submitted_at > latest[r.form_id]) {
-          latest[r.form_id] = r.submitted_at;
-        }
-      });
-
-      const withCounts = (formList || []).map((f) => ({
-        ...f,
-        count: counts[f.id] || 0,
-        latest: latest[f.id] || null,
-      }));
-      withCounts.sort((a, b) => b.count - a.count);
-      setForms(withCounts);
+      try {
+        const { forms } = await apiFetch("/api/responses-overview");
+        setForms(forms || []);
+      } catch (err) {
+        alert(err.message);
+      }
       setLoading(false);
     })();
-  }, [supabase]);
+  }, []);
 
   const filtered = forms.filter((f) =>
     (f.title || "").toLowerCase().includes(search.trim().toLowerCase())

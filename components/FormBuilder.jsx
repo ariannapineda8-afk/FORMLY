@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api";
 import {
   FIELD_GROUPS,
   TYPE_LABELS,
@@ -13,7 +13,6 @@ import {
   fmtStyle,
 } from "@/lib/fields";
 import { FieldBadge, GripIcon } from "@/components/FieldIcon";
-import { explainError } from "@/lib/errors";
 import { LOGIC_TRIGGER_TYPES, triggerChoices, findBrokenCondition } from "@/lib/logic";
 import { useRole } from "@/components/RoleContext";
 import PublicForm from "@/components/PublicForm";
@@ -304,7 +303,6 @@ function ConditionEditor({ field, index, fields, onChange }) {
 }
 
 export default function FormBuilder({ formId, initial }) {
-  const supabase = createClient();
   const router = useRouter();
 
   const [title, setTitle] = useState(initial?.title || "");
@@ -328,7 +326,12 @@ export default function FormBuilder({ formId, initial }) {
   useEffect(() => {
     if (!formId) return;
     (async () => {
-      const { data } = await supabase.from("forms").select("*").eq("id", formId).single();
+      let data = null;
+      try {
+        ({ form: data } = await apiFetch(`/api/forms/${formId}`));
+      } catch (err) {
+        alert(err.message);
+      }
       if (data) {
         setTitle(data.title);
         setDescription(data.description || "");
@@ -344,7 +347,7 @@ export default function FormBuilder({ formId, initial }) {
         setSlug(data.slug);
       }
     })();
-  }, [formId, supabase]);
+  }, [formId]);
 
   useEffect(() => {
     if (!focusId.current) return;
@@ -448,30 +451,21 @@ export default function FormBuilder({ formId, initial }) {
       color,
       status,
       fields: cleanFields,
-      updated_at: new Date(),
     };
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    let error;
-    if (formId) {
-      ({ error } = await supabase.from("forms").update(payload).eq("id", formId));
-    } else {
-      ({ error } = await supabase.from("forms").insert({
-        ...payload,
-        slug: slugify(title),
-        owner_email: user?.email,
-      }));
+    try {
+      if (formId) {
+        await apiFetch(`/api/forms/${formId}`, { method: "PATCH", body: JSON.stringify(payload) });
+      } else {
+        await apiFetch("/api/forms", { method: "POST", body: JSON.stringify(payload) });
+      }
+      router.push("/dashboard/forms");
+      router.refresh();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    if (error) {
-      alert(explainError(error, user?.email));
-      return;
-    }
-    router.push("/dashboard/forms");
-    router.refresh();
   }
 
   function copyLink() {
