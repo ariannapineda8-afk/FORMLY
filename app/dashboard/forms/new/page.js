@@ -43,9 +43,10 @@ export default function NewFormPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => setChosen(null)} className="btn-sm">← Cambiar plantilla</button>
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
         <h1 className="page-title !text-[18px]">Crear formulario</h1>
+        <span className="text-[12px] text-gray-400">·</span>
+        <button onClick={() => setChosen(null)} className="btn-sm">← Cambiar plantilla</button>
       </div>
       <FormBuilder initial={tpl || undefined} />
     </div>

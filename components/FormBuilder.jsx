@@ -41,6 +41,20 @@ const svgProps = {
   strokeLinejoin: "round",
 };
 
+function StepHeader({ n, title, subtitle, className = "" }) {
+  return (
+    <div className={`flex items-start gap-2.5 ${className}`}>
+      <span className="w-6 h-6 rounded-full bg-navy text-white text-[12px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+        {n}
+      </span>
+      <div className="min-w-0">
+        <h3 className="text-[14px] font-semibold text-navy leading-tight">{title}</h3>
+        {subtitle && <p className="text-[11.5px] text-gray-500 mt-0.5">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
 function IconBtn({ title, onClick, danger, children }) {
   return (
     <button
@@ -499,17 +513,18 @@ export default function FormBuilder({ formId, initial }) {
   };
 
   return (
-    <div className="grid grid-cols-[1fr_330px] gap-5 items-start max-[900px]:grid-cols-1">
+    <div className="grid grid-cols-[1fr_340px] gap-6 items-start max-[940px]:grid-cols-1">
       <div>
-        <div className="card p-4 mb-4">
-          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-            <h3 className="text-[14px] font-semibold text-navy">Agregar campo</h3>
-            <span className="text-[11.5px] text-gray-500">Toca un tipo para añadirlo al final del formulario</span>
-          </div>
-          <div className="space-y-3">
+        <div className="card p-4.5 mb-5">
+          <StepHeader
+            n={1}
+            title="Elige qué quieres preguntar"
+            subtitle="Toca un tipo para agregarlo al final del formulario."
+          />
+          <div className="space-y-3.5 mt-4">
             {FIELD_GROUPS.map((g) => (
               <div key={g.name}>
-                <p className="text-[11px] font-semibold text-off mb-1.5">{g.name}</p>
+                <p className="text-[10.5px] font-bold text-off uppercase tracking-wide mb-1.5">{g.name}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {g.types.map((t) => (
                     <button
@@ -527,6 +542,17 @@ export default function FormBuilder({ formId, initial }) {
             ))}
           </div>
         </div>
+
+        <StepHeader
+          n={2}
+          title="Organiza tus preguntas"
+          subtitle={
+            fields.length > 0
+              ? `${fields.length} ${fields.length === 1 ? "pregunta agregada" : "preguntas agregadas"} · arrástralas con ⋮⋮ para reordenar`
+              : "Todavía no has agregado ninguna pregunta."
+          }
+          className="mb-3.5"
+        />
 
         {fields.length === 0 && (
           <div className="border-2 border-dashed border-[#DCD6CB] rounded-2xl text-center py-12 px-6">
@@ -578,11 +604,12 @@ export default function FormBuilder({ formId, initial }) {
               >
                 <GripIcon />
               </span>
+              <span className="w-5 h-5 rounded-full bg-[#EEF0F3] text-off text-[10.5px] font-bold flex items-center justify-center shrink-0">
+                {idx + 1}
+              </span>
               <FieldBadge type={f.type} size={30} />
               <div className="min-w-0">
-                <p className="text-[12.5px] font-semibold text-navy leading-tight">
-                  {idx + 1}. {TYPE_LABELS[f.type]}
-                </p>
+                <p className="text-[12.5px] font-semibold text-navy leading-tight">{TYPE_LABELS[f.type]}</p>
                 <p className="text-[11px] text-gray-500 truncate hidden sm:block">{TYPE_HINTS[f.type]}</p>
               </div>
               {f.showIf && (
@@ -678,79 +705,95 @@ export default function FormBuilder({ formId, initial }) {
         ))}
       </div>
 
-      <div className="min-[901px]:sticky min-[901px]:top-[76px]">
+      <div className="min-[941px]:sticky min-[941px]:top-4">
         <div className="card p-5">
-          <h3 className="text-[14.5px] text-navy font-semibold mb-3.5">Detalles del formulario</h3>
-          <Field label="Título">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input"
-              placeholder="Ej. Solicitud de cotización"
-            />
-          </Field>
-          <Field label="Descripción">
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="input min-h-[64px]"
-            />
-          </Field>
-          <Field label="Texto del botón de envío">
-            <input value={buttonText} onChange={(e) => setButtonText(e.target.value)} className="input" />
-          </Field>
-          <Field label="Mensaje al completar">
-            <textarea
-              value={thanksMessage}
-              onChange={(e) => setThanksMessage(e.target.value)}
-              className="input min-h-[64px]"
-            />
-          </Field>
-          <Field label="Color principal">
-            <div className="flex items-center gap-2.5">
+          <StepHeader n={3} title="Completa los detalles" subtitle="Esta información aparece en tu formulario." />
+
+          <SidebarSection label="General">
+            <Field label="Título del formulario">
               <input
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-11 h-9 border border-[#E4E7EC] rounded-lg p-0.5 bg-white"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="input"
+                placeholder="Ej. Solicitud de cotización"
               />
-              <span className="text-[12px] text-gray-500 uppercase">{color}</span>
-            </div>
-          </Field>
-          <Field label="Estado">
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="input">
-              <option value="borrador">Borrador</option>
-              <option value="activo">Activo</option>
-              <option value="inactivo">Inactivo</option>
-            </select>
-          </Field>
+            </Field>
+            <Field label="Descripción (opcional)">
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="input min-h-[64px]"
+                placeholder="Una o dos frases que expliquen de qué trata"
+              />
+            </Field>
+          </SidebarSection>
+
+          <SidebarSection label="Al enviar la respuesta">
+            <Field label="Texto del botón">
+              <input value={buttonText} onChange={(e) => setButtonText(e.target.value)} className="input" />
+            </Field>
+            <Field label="Mensaje de agradecimiento">
+              <textarea
+                value={thanksMessage}
+                onChange={(e) => setThanksMessage(e.target.value)}
+                className="input min-h-[64px]"
+              />
+            </Field>
+          </SidebarSection>
+
+          <SidebarSection label="Apariencia">
+            <Field label="Color principal">
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-11 h-9 border border-[#E4E7EC] rounded-lg p-0.5 bg-white"
+                />
+                <span className="text-[12px] text-gray-500 uppercase">{color}</span>
+              </div>
+            </Field>
+          </SidebarSection>
+
+          <SidebarSection label="Publicación">
+            <Field label="Estado">
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className="input">
+                <option value="borrador">Borrador — no se puede responder todavía</option>
+                <option value="activo">Activo — ya se puede compartir y responder</option>
+                <option value="inactivo">Inactivo — se desactivó temporalmente</option>
+              </select>
+            </Field>
+            {slug && (
+              <Field label="Enlace público">
+                <div className="flex gap-1.5">
+                  <input
+                    readOnly
+                    value={"/f/" + slug}
+                    className="input !py-1.5 text-[12px] text-gray-500"
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <button type="button" onClick={copyLink} className="btn-sm shrink-0">
+                    Copiar
+                  </button>
+                </div>
+                {status !== "activo" && (
+                  <p className="text-[11px] text-warn mt-1.5">
+                    Este enlace empezará a funcionar cuando el estado esté en "Activo".
+                  </p>
+                )}
+              </Field>
+            )}
+          </SidebarSection>
         </div>
 
-        <button type="button" onClick={() => setShowPreview(true)} className="btn btn-outline w-full mt-3.5">
-          Vista previa
-        </button>
-        <button onClick={save} disabled={saving} className="btn btn-primary w-full mt-2.5 !py-3">
-          {saving ? "Guardando..." : "Guardar formulario"}
-        </button>
-
-        {slug && (
-          <div className="card p-3.5 mt-3.5">
-            <p className="text-[12px] text-gray-500 mb-1.5">
-              Enlace público{status !== "activo" ? " (funciona cuando el estado sea Activo)" : ""}
-            </p>
-            <div className="flex gap-1.5">
-              <input
-                readOnly
-                value={"/f/" + slug}
-                className="input !py-1.5 text-[12px] text-gray-500"
-                onFocus={(e) => e.target.select()}
-              />
-              <button type="button" onClick={copyLink} className="btn-sm shrink-0">
-                Copiar
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="flex gap-2.5 mt-3.5">
+          <button type="button" onClick={() => setShowPreview(true)} className="btn btn-outline flex-1">
+            Vista previa
+          </button>
+          <button onClick={save} disabled={saving} className="btn btn-primary flex-1 !py-3">
+            {saving ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
       </div>
 
       {showPreview && (
@@ -801,8 +844,17 @@ export default function FormBuilder({ formId, initial }) {
 
 function Field({ label, children }) {
   return (
-    <div className="mb-3.5">
+    <div className="mb-3.5 last:mb-0">
       <label className="block text-[12px] text-gray-500 mb-1">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function SidebarSection({ label, children, className = "" }) {
+  return (
+    <div className={`mt-4 pt-4 border-t border-[#F2EFE9] ${className}`}>
+      <p className="text-[10.5px] font-bold text-off uppercase tracking-wide mb-2.5">{label}</p>
       {children}
     </div>
   );
