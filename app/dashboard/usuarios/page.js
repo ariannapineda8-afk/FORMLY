@@ -17,6 +17,8 @@ export default function UsersPage() {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState("editor");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
@@ -39,15 +41,47 @@ export default function UsersPage() {
     e.preventDefault();
     const email = newEmail.trim().toLowerCase();
     if (!email) return;
+    if (newPassword.length < 8) {
+      alert("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
     setAdding(true);
     try {
-      await apiFetch("/api/users", { method: "POST", body: JSON.stringify({ email, role: newRole }) });
+      const res = await apiFetch("/api/users", {
+        method: "POST",
+        body: JSON.stringify({ email, role: newRole, password: newPassword }),
+      });
+      alert(
+        (res && res.created === false
+          ? `Listo. ${email} ya tenía cuenta: se actualizó su contraseña y su rol.`
+          : `Listo. ${email} ya puede entrar a Formly.`) +
+          `\n\nCorreo: ${email}\nContraseña: ${newPassword}\n\nCompártesela por un medio seguro.`
+      );
       setNewEmail("");
+      setNewPassword("");
       load();
     } catch (err) {
       alert(err.message);
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function changePassword(u) {
+    const password = window.prompt(`Escribe la contraseña nueva para ${u.email} (mínimo 8 caracteres):`);
+    if (password === null) return;
+    if (password.length < 8) {
+      alert("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    try {
+      await apiFetch("/api/users/set-password", {
+        method: "POST",
+        body: JSON.stringify({ email: u.email, password }),
+      });
+      alert(`Contraseña actualizada.\n\nCorreo: ${u.email}\nContraseña: ${password}`);
+    } catch (err) {
+      alert(err.message);
     }
   }
 
@@ -78,8 +112,8 @@ export default function UsersPage() {
     <div>
       <h1 className="page-title">Usuarios</h1>
       <p className="page-subtitle mb-6">
-        Cada persona entra con su propio correo. Todos comparten la misma contraseña hasta que crees una cuenta
-        individual para cada quien en Supabase → Authentication → Users.
+        Cada persona entra con su propio correo y contraseña. Desde aquí puedes crear usuarios nuevos y
+        cambiar la contraseña de quien la olvide.
       </p>
 
       {!loading && needsSetup && (
@@ -107,6 +141,31 @@ export default function UsersPage() {
               className="input"
             />
           </div>
+          <div className="min-w-[200px]">
+            <label className="block text-[12px] text-gray-500 mb-1">Contraseña (mín. 8 caracteres)</label>
+            <div className="relative">
+              <input
+                type={showPass ? "text" : "password"}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Elige una contraseña"
+                className="input pr-16"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-blue hover:text-navy"
+              >
+                {showPass ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
+          </div>
           <div>
             <label className="block text-[12px] text-gray-500 mb-1">Rol</label>
             <select value={newRole} onChange={(e) => setNewRole(e.target.value)} className="input">
@@ -118,7 +177,7 @@ export default function UsersPage() {
             </select>
           </div>
           <button type="submit" disabled={adding} className="btn btn-primary">
-            + Dar acceso
+            {adding ? "Creando..." : "+ Crear usuario"}
           </button>
         </form>
       )}
@@ -159,7 +218,10 @@ export default function UsersPage() {
                     </td>
                     {myRole === "admin" && (
                       <td>
-                        <button onClick={() => removeUser(u)} className="btn-sm">Quitar acceso</button>
+                        <div className="flex gap-1.5 flex-wrap">
+                          <button onClick={() => changePassword(u)} className="btn-sm">Cambiar contraseña</button>
+                          <button onClick={() => removeUser(u)} className="btn-sm">Quitar acceso</button>
+                        </div>
                       </td>
                     )}
                   </tr>
