@@ -9,44 +9,13 @@ export default async function DashboardHome() {
     .select("id, title, status, created_at")
     .order("created_at", { ascending: false });
 
-  const { count: totalResponses } = await supabase
-    .from("form_responses")
-    .select("id", { count: "exact", head: true });
-
   const all = forms || [];
-  const activos = all.filter((f) => f.status === "activo").length;
-  const borrador = all.filter((f) => f.status === "borrador").length;
   const recent = all.slice(0, 5);
 
   return (
     <div>
       <h1 className="page-title">Inicio</h1>
-      <p className="page-subtitle mb-6">Un vistazo rápido a tus formularios y respuestas.</p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
-        <div className="card p-5">
-          <p className="text-[12px] text-gray-500 mb-2">Respuestas totales</p>
-          <div className="font-display text-navy text-[28px] font-semibold leading-none">
-            {totalResponses || 0}
-          </div>
-        </div>
-        <div className="card p-5">
-          <p className="text-[12px] text-gray-500 mb-2">Formularios totales</p>
-          <div className="font-display text-navy text-[28px] font-semibold leading-none">{all.length}</div>
-        </div>
-        <div className="card p-5">
-          <p className="text-[12px] text-gray-500 mb-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-mint inline-block" /> Activos
-          </p>
-          <div className="font-display text-mint text-[28px] font-semibold leading-none">{activos}</div>
-        </div>
-        <div className="card p-5">
-          <p className="text-[12px] text-gray-500 mb-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-warn inline-block" /> En borrador
-          </p>
-          <div className="font-display text-warn text-[28px] font-semibold leading-none">{borrador}</div>
-        </div>
-      </div>
+      <p className="page-subtitle mb-6">Un vistazo rápido a tus formularios.</p>
 
       <div className="card p-5">
         <div className="flex items-center justify-between mb-3.5">

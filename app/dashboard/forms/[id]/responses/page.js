@@ -37,6 +37,17 @@ export default function ResponsesPage({ params }) {
     return responses.filter((r) => JSON.stringify(r.data).toLowerCase().includes(q));
   }, [responses, search]);
 
+  async function deleteResponse(r) {
+    if (!confirm("¿Eliminar esta respuesta? No se puede deshacer.")) return;
+    try {
+      await apiFetch(`/api/forms/${params.id}/responses/${r.id}`, { method: "DELETE" });
+      setResponses((prev) => prev.filter((x) => x.id !== r.id));
+      setPreviewResponse((prev) => (prev?.id === r.id ? null : prev));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   function exportCsv() {
     const header = ["Fecha", ...cols.map((c) => c.label || c.type)];
     const lines = [header.join(",")].concat(
@@ -126,6 +137,12 @@ export default function ResponsesPage({ params }) {
                           className="btn-sm !bg-navy !text-white !border-navy hover:!bg-navy2"
                         >
                           PDF
+                        </button>
+                        <button
+                          onClick={() => deleteResponse(r)}
+                          className="btn-sm !text-[#B23A3A] !border-[#F2D6D6] hover:!bg-[#FCEBEB]"
+                        >
+                          Eliminar
                         </button>
                       </div>
                     </td>
