@@ -1,18 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthContext, canEditRole } from "@/lib/auth";
-
-function slugify(text) {
-  return (
-    text
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") +
-    "-" +
-    Math.random().toString(36).slice(2, 6)
-  );
-}
+import { uniqueSlug } from "@/lib/slug";
 
 export async function GET() {
   const { supabase, user } = await getAuthContext();
@@ -42,7 +30,7 @@ export async function POST(request) {
       color: payload.color || "#12294D",
       status: payload.status || "borrador",
       fields: payload.fields || [],
-      slug: slugify(payload.title),
+      slug: await uniqueSlug(supabase, payload.title),
       owner_email: user.email,
     })
     .select()

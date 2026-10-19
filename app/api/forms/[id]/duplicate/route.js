@@ -1,18 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthContext, canEditRole } from "@/lib/auth";
-
-function slugify(text) {
-  return (
-    text
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") +
-    "-" +
-    Math.random().toString(36).slice(2, 6)
-  );
-}
+import { uniqueSlug } from "@/lib/slug";
 
 export async function POST(request, { params }) {
   const { supabase, user, role } = await getAuthContext();
@@ -28,12 +16,13 @@ export async function POST(request, { params }) {
   if (readErr) return NextResponse.json({ error: readErr.message }, { status: 400 });
 
   const { id, created_at, updated_at, slug, ...rest } = original;
+  const newTitle = original.title + " (copia)";
   const { data, error } = await supabase
     .from("forms")
     .insert({
       ...rest,
-      title: original.title + " (copia)",
-      slug: slugify(original.title),
+      title: newTitle,
+      slug: await uniqueSlug(supabase, newTitle),
       status: "borrador",
       owner_email: user.email,
     })

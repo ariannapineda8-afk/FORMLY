@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthContext, canEditRole } from "@/lib/auth";
+import { uniqueSlug } from "@/lib/slug";
 
 export async function GET(request, { params }) {
   const { supabase, user } = await getAuthContext();
@@ -27,6 +28,20 @@ export async function PATCH(request, { params }) {
   ];
   const update = { updated_at: new Date().toISOString() };
   for (const k of allowed) if (k in payload) update[k] = payload[k];
+
+  // Mientras el formulario sea un borrador, su enlace sigue al título: si lo renombras
+  // (por ejemplo, una copia que conviertes en otra vacante) el enlace se actualiza.
+  // Una vez publicado, el enlace ya no cambia para no romper lo que se haya compartido.
+  if (typeof payload.title === "string" && payload.title.trim()) {
+    const { data: current } = await supabase
+      .from("forms")
+      .select("title, status")
+      .eq("id", params.id)
+      .single();
+    if (current && current.status === "borrador" && current.title !== payload.title) {
+      update.slug = await uniqueSlug(supabase, payload.title, params.id);
+    }
+  }
 
   const { data, error } = await supabase.from("forms").update(update).eq("id", params.id).select().single();
   if (error) return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });

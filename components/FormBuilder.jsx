@@ -17,19 +17,6 @@ import { LOGIC_TRIGGER_TYPES, triggerChoices, findBrokenCondition } from "@/lib/
 import { useRole } from "@/components/RoleContext";
 import PublicForm from "@/components/PublicForm";
 
-function slugify(text) {
-  return (
-    text
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") +
-    "-" +
-    Math.random().toString(36).slice(2, 6)
-  );
-}
-
 const svgProps = {
   width: 15,
   height: 15,

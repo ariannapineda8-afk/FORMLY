@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import ResponsePreview from "@/components/ResponsePreview";
+import ResponseDrawer from "@/components/ResponseDrawer";
+import { useRole } from "@/components/RoleContext";
 import { downloadResponsePdf } from "@/lib/pdf";
 
 export default function ResponsesPage({ params }) {
@@ -10,7 +11,9 @@ export default function ResponsesPage({ params }) {
   const [responses, setResponses] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [previewResponse, setPreviewResponse] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const { role } = useRole();
+  const canEdit = role === "admin" || role === "editor";
 
   useEffect(() => {
     (async () => {
@@ -42,11 +45,19 @@ export default function ResponsesPage({ params }) {
     try {
       await apiFetch(`/api/forms/${params.id}/responses/${r.id}`, { method: "DELETE" });
       setResponses((prev) => prev.filter((x) => x.id !== r.id));
-      setPreviewResponse((prev) => (prev?.id === r.id ? null : prev));
+      setSelectedId((prev) => (prev === r.id ? null : prev));
     } catch (err) {
       alert(err.message);
     }
   }
+
+  const selectedIndex = filtered.findIndex((r) => r.id === selectedId);
+  const selected = selectedIndex >= 0 ? filtered[selectedIndex] : null;
+  const goPrev = selectedIndex > 0 ? () => setSelectedId(filtered[selectedIndex - 1].id) : null;
+  const goNext =
+    selectedIndex >= 0 && selectedIndex < filtered.length - 1
+      ? () => setSelectedId(filtered[selectedIndex + 1].id)
+      : null;
 
   function exportCsv() {
     const header = ["Fecha", ...cols.map((c) => c.label || c.type)];
@@ -68,9 +79,13 @@ export default function ResponsesPage({ params }) {
   if (loading) return <p className="text-gray-500">Cargando...</p>;
 
   return (
-    <div>
+    <div className="flex items-start gap-5">
+      <div className="flex-1 min-w-0">
       <h1 className="page-title">Respuestas</h1>
-      <p className="page-subtitle mb-5">{form?.title}</p>
+      <p className="page-subtitle mb-5">
+        {form?.title}
+        {filtered.length > 0 && <span className="text-gray-400"> · haz clic en una respuesta para verla completa</span>}
+      </p>
 
       <div className="flex gap-2.5 mb-4 flex-wrap">
         <input
@@ -108,7 +123,11 @@ export default function ResponsesPage({ params }) {
               </thead>
               <tbody>
                 {filtered.map((r) => (
-                  <tr key={r.id}>
+                  <tr
+                    key={r.id}
+                    onClick={() => setSelectedId(r.id)}
+                    className={`cursor-pointer ${r.id === selectedId ? "!bg-[#EAF1F9]" : ""}`}
+                  >
                     <td className="whitespace-nowrap text-gray-500">
                       {new Date(r.submitted_at).toLocaleString()}
                     </td>
@@ -127,23 +146,22 @@ export default function ResponsesPage({ params }) {
                         )}
                       </td>
                     ))}
-                    <td className="whitespace-nowrap">
+                    <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-2">
-                        <button onClick={() => setPreviewResponse(r)} className="btn-sm">
-                          Ver
-                        </button>
                         <button
                           onClick={() => downloadResponsePdf(form, r, form?.fields || [])}
                           className="btn-sm !bg-navy !text-white !border-navy hover:!bg-navy2"
                         >
                           PDF
                         </button>
-                        <button
-                          onClick={() => deleteResponse(r)}
-                          className="btn-sm !text-[#B23A3A] !border-[#F2D6D6] hover:!bg-[#FCEBEB]"
-                        >
-                          Eliminar
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => deleteResponse(r)}
+                            className="btn-sm !text-[#B23A3A] !border-[#F2D6D6] hover:!bg-[#FCEBEB]"
+                          >
+                            Eliminar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -154,11 +172,18 @@ export default function ResponsesPage({ params }) {
         </div>
       )}
 
-      <ResponsePreview
+      </div>
+
+      <ResponseDrawer
         form={form}
-        response={previewResponse}
-        fields={form?.fields || []}
-        onClose={() => setPreviewResponse(null)}
+        response={selected}
+        position={selectedIndex + 1}
+        total={filtered.length}
+        onClose={() => setSelectedId(null)}
+        onPrev={goPrev}
+        onNext={goNext}
+        onDelete={deleteResponse}
+        canDelete={canEdit}
       />
     </div>
   );
