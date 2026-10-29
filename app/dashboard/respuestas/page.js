@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
 export default function AllResponsesPage() {
+  const router = useRouter();
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -66,7 +68,12 @@ export default function AllResponsesPage() {
               </thead>
               <tbody>
                 {filtered.map((f) => (
-                  <tr key={f.id}>
+                  <tr
+                    key={f.id}
+                    onClick={() => router.push(`/dashboard/forms/${f.id}/responses`)}
+                    className="cursor-pointer"
+                    title="Haz clic para ver las respuestas"
+                  >
                     <td className="font-medium">{f.title}</td>
                     <td>
                       <span className={`badge ${f.status}`}>{f.status}</span>
@@ -75,7 +82,7 @@ export default function AllResponsesPage() {
                     <td className="text-gray-500">
                       {f.latest ? new Date(f.latest).toLocaleString() : "—"}
                     </td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <Link href={`/dashboard/forms/${f.id}/responses`} className="btn-sm">
                         Ver respuestas
                       </Link>

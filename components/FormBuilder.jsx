@@ -16,6 +16,7 @@ import { FieldBadge, GripIcon } from "@/components/FieldIcon";
 import { LOGIC_TRIGGER_TYPES, triggerChoices, findBrokenCondition } from "@/lib/logic";
 import { useRole } from "@/components/RoleContext";
 import PublicForm from "@/components/PublicForm";
+import { slugBase as slugPreview } from "@/lib/slug";
 
 const svgProps = {
   width: 15,
@@ -27,20 +28,6 @@ const svgProps = {
   strokeLinecap: "round",
   strokeLinejoin: "round",
 };
-
-function StepHeader({ n, title, subtitle, className = "" }) {
-  return (
-    <div className={`flex items-start gap-2.5 ${className}`}>
-      <span className="w-6 h-6 rounded-full bg-navy text-white text-[12px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-        {n}
-      </span>
-      <div className="min-w-0">
-        <h3 className="text-[14px] font-semibold text-navy leading-tight">{title}</h3>
-        {subtitle && <p className="text-[11.5px] text-gray-500 mt-0.5">{subtitle}</p>}
-      </div>
-    </div>
-  );
-}
 
 function IconBtn({ title, onClick, danger, children }) {
   return (
@@ -303,6 +290,68 @@ function ConditionEditor({ field, index, fields, onChange }) {
   );
 }
 
+function TypePicker({ onPick, variant = "list" }) {
+  return (
+    <div className={variant === "list" ? "space-y-4" : "space-y-3"}>
+      {FIELD_GROUPS.map((g) => (
+        <div key={g.name}>
+          <p className="text-[10.5px] font-bold text-off uppercase tracking-wide mb-1.5">{g.name}</p>
+          <div className={variant === "list" ? "flex flex-col gap-1" : "grid grid-cols-2 sm:grid-cols-3 gap-1.5"}>
+            {g.types.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onPick(t)}
+                title={TYPE_HINTS[t]}
+                className="flex items-center gap-2.5 pl-1.5 pr-2.5 py-1.5 rounded-xl border border-transparent bg-white text-[12.5px] text-navy text-left hover:border-blue hover:bg-corallt transition-colors"
+              >
+                <FieldBadge type={t} size={26} />
+                <span className="leading-tight">{TYPE_LABELS[t]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InsertRow({ open, onToggle, onPick, onClose, label }) {
+  return (
+    <div className="relative my-1">
+      <div className="flex items-center gap-2 group">
+        <div className="flex-1 h-px bg-[#E4E7EC] group-hover:bg-blue/40 transition-colors" />
+        <button
+          type="button"
+          onClick={onToggle}
+          title="Agregar una pregunta aquí"
+          aria-label="Agregar una pregunta aquí"
+          className={`h-6 px-2.5 rounded-full text-[11.5px] font-semibold flex items-center gap-1 border transition-colors ${
+            open
+              ? "bg-navy text-white border-navy"
+              : "bg-white text-blue border-[#D5E1EE] hover:bg-corallt hover:border-blue"
+          }`}
+        >
+          <span className="text-[14px] leading-none">{open ? "×" : "+"}</span> {open ? "Cerrar" : label || "Agregar aquí"}
+        </button>
+        <div className="flex-1 h-px bg-[#E4E7EC] group-hover:bg-blue/40 transition-colors" />
+      </div>
+      {open && (
+        <div className="card mt-2 mb-1 p-3.5 border-blue/40 shadow-md">
+          <p className="text-[12px] font-semibold text-navy mb-2.5">¿Qué quieres agregar aquí?</p>
+          <TypePicker
+            variant="grid"
+            onPick={(t) => {
+              onPick(t);
+              onClose();
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FormBuilder({ formId, initial }) {
   const router = useRouter();
 
@@ -323,6 +372,9 @@ export default function FormBuilder({ formId, initial }) {
   const [dragField, setDragField] = useState(null);
   const [overField, setOverField] = useState(null);
   const focusId = useRef(null);
+  const [activeId, setActiveId] = useState(null);
+  const [pickerAt, setPickerAt] = useState(null);
+  const [sheet, setSheet] = useState(false);
 
   useEffect(() => {
     if (!formId) return;
@@ -360,19 +412,28 @@ export default function FormBuilder({ formId, initial }) {
     focusId.current = null;
   }, [fields]);
 
-  function addField(type) {
+  // Inserta una pregunta en la posición indicada. Sin posición: debajo de la pregunta
+  // seleccionada, o al final si no hay ninguna seleccionada.
+  function addField(type, at) {
     const id = "fx" + Date.now() + Math.random().toString(16).slice(2, 6);
     focusId.current = id;
-    setFields((f) => [
-      ...f,
-      {
+    setActiveId(id);
+    setFields((f) => {
+      let pos = at;
+      if (pos === undefined || pos === null) {
+        const i = f.findIndex((x) => x.id === activeId);
+        pos = i >= 0 ? i + 1 : f.length;
+      }
+      const arr = [...f];
+      arr.splice(Math.min(Math.max(pos, 0), arr.length), 0, {
         id,
         type,
         label: "",
         required: false,
         options: OPTION_TYPES.includes(type) ? ["Opción 1", "Opción 2"] : "",
-      },
-    ]);
+      });
+      return arr;
+    });
   }
   function updateField(id, key, val) {
     setFields((f) => f.map((x) => (x.id === id ? { ...x, [key]: val } : x)));
@@ -499,289 +560,369 @@ export default function FormBuilder({ formId, initial }) {
     ),
   };
 
+  // Número de página al que pertenece cada pregunta (cada "Sección" inicia una página nueva).
+  const pageOf = {};
+  let pg = 1;
+  let hasContent = false;
+  fields.forEach((x) => {
+    if (x.type === "seccion" && hasContent) pg += 1;
+    pageOf[x.id] = pg;
+    hasContent = true;
+  });
+  const totalPages = fields.length ? pg : 1;
+
+  const statusStyles = {
+    borrador: "Borrador",
+    activo: "Activo",
+    inactivo: "Inactivo",
+  };
+
   return (
-    <div className="grid grid-cols-[1fr_340px] gap-6 items-start max-[940px]:grid-cols-1">
-      <div>
-        <div className="card p-4.5 mb-5">
-          <StepHeader
-            n={1}
-            title="Elige qué quieres preguntar"
-            subtitle="Toca un tipo para agregarlo al final del formulario."
-          />
-          <div className="space-y-3.5 mt-4">
-            {FIELD_GROUPS.map((g) => (
-              <div key={g.name}>
-                <p className="text-[10.5px] font-bold text-off uppercase tracking-wide mb-1.5">{g.name}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {g.types.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => addField(t)}
-                      className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-xl border border-[#E4E7EC] bg-white text-[12.5px] text-navy hover:border-blue hover:bg-corallt transition-colors"
-                    >
-                      <FieldBadge type={t} size={26} />
-                      {TYPE_LABELS[t]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+    <div>
+      {/* Barra superior fija: siempre a la mano para guardar y probar */}
+      <div className="sticky top-3 z-30 mb-5 rounded-2xl border border-[#E4E7EC] bg-white/95 backdrop-blur px-4 py-2.5 shadow-[0_2px_10px_rgba(18,41,77,0.08)] flex items-center gap-3 flex-wrap">
+        <div className="min-w-0 flex-1 basis-[180px]">
+          <p className="text-[11px] text-gray-500 leading-tight">{formId ? "Editando" : "Nuevo formulario"}</p>
+          <p className="text-[14px] font-semibold text-navy truncate leading-tight">{title.trim() || "Sin título"}</p>
         </div>
-
-        <StepHeader
-          n={2}
-          title="Organiza tus preguntas"
-          subtitle={
-            fields.length > 0
-              ? `${fields.length} ${fields.length === 1 ? "pregunta agregada" : "preguntas agregadas"} · arrástralas con ⋮⋮ para reordenar`
-              : "Todavía no has agregado ninguna pregunta."
-          }
-          className="mb-3.5"
-        />
-
-        {fields.length === 0 && (
-          <div className="border-2 border-dashed border-[#DCD6CB] rounded-2xl text-center py-12 px-6">
-            <div className="w-10 h-10 rounded-full bg-corallt text-coral2 mx-auto mb-3 flex items-center justify-center text-[20px] font-semibold">
-              +
-            </div>
-            <p className="text-navy font-semibold text-[14px] mb-1">Tu formulario está vacío</p>
-            <p className="text-gray-500 text-[12.5px]">Elige un tipo de campo arriba para empezar a construirlo.</p>
-          </div>
-        )}
-
-        {fields.map((f, idx) => (
-          <div
-            key={f.id}
-            id={"field-" + f.id}
-            onDragOver={(e) => {
-              if (dragField) {
-                e.preventDefault();
-                setOverField(f.id);
-              }
-            }}
-            onDrop={(e) => {
-              if (!dragField) return;
-              e.preventDefault();
-              dropField(f.id);
-              setDragField(null);
-              setOverField(null);
-            }}
-            className={`card mb-3 overflow-hidden transition-shadow ${dragField === f.id ? "opacity-40" : ""} ${
-              dragField && overField === f.id && dragField !== f.id ? "ring-2 ring-blue" : ""
-            }`}
+        <label className="flex items-center gap-2 text-[12px] text-gray-500">
+          Estado
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="input !py-1.5 !w-auto text-[12.5px]"
           >
-            <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[#F2EFE9] bg-[#FCFBF8] flex-wrap">
-              <span
-                draggable
-                title="Arrastra para reordenar"
-                onDragStart={(e) => {
-                  setDragField(f.id);
-                  e.dataTransfer.effectAllowed = "move";
-                  e.dataTransfer.setData("text/plain", f.id);
-                  const card = e.currentTarget.closest("[id^='field-']");
-                  if (card) e.dataTransfer.setDragImage(card, 20, 20);
+            <option value="borrador">{statusStyles.borrador}</option>
+            <option value="activo">{statusStyles.activo}</option>
+            <option value="inactivo">{statusStyles.inactivo}</option>
+          </select>
+        </label>
+        <button type="button" onClick={() => setShowPreview(true)} className="btn btn-outline !py-2">
+          Vista previa
+        </button>
+        <button onClick={save} disabled={saving} className="btn btn-primary !py-2">
+          {saving ? "Guardando..." : "Guardar"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-[210px_minmax(0,1fr)_280px] gap-5 items-start max-[1180px]:grid-cols-[minmax(0,1fr)]">
+        {/* IZQUIERDA: tipos de pregunta siempre visibles */}
+        <aside className="max-[1180px]:hidden sticky top-[86px] max-h-[calc(100vh-110px)] overflow-y-auto rounded-2xl border border-[#E4E7EC] bg-[#FAFBFD] p-3.5">
+          <p className="text-[13px] font-semibold text-navy leading-tight">Agregar pregunta</p>
+          <p className="text-[11px] text-gray-500 mt-0.5 mb-3.5 leading-snug">
+            {activeId && fields.some((x) => x.id === activeId)
+              ? "Se agrega debajo de la pregunta seleccionada."
+              : "Toca un tipo y se agrega al final."}
+          </p>
+          <TypePicker onPick={(t) => addField(t)} />
+        </aside>
+
+        {/* CENTRO: el formulario */}
+        <div className="min-w-0">
+          <div className="card p-5 mb-4 border-t-4" style={{ borderTopColor: color }}>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Título del formulario (ej. Auxiliar de Almacén)"
+              className="w-full text-[20px] font-semibold text-navy placeholder:text-gray-300 outline-none border-b border-transparent focus:border-blue pb-1.5 bg-transparent"
+            />
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Descripción (opcional): una o dos frases que expliquen de qué trata"
+              rows={2}
+              className="w-full mt-2 text-[13.5px] text-gray-600 placeholder:text-gray-300 outline-none border-b border-transparent focus:border-blue bg-transparent resize-none"
+            />
+            {totalPages > 1 && (
+              <p className="text-[11.5px] text-gray-500 mt-2">
+                Este formulario tiene {totalPages} páginas: cada <strong>Sección</strong> empieza una página nueva con
+                botones Siguiente / Atrás.
+              </p>
+            )}
+          </div>
+
+          {fields.length === 0 && (
+            <div className="border-2 border-dashed border-[#D5E1EE] rounded-2xl text-center py-12 px-6 bg-[#FAFBFD]">
+              <div className="w-10 h-10 rounded-full bg-corallt text-coral2 mx-auto mb-3 flex items-center justify-center text-[20px] font-semibold">
+                +
+              </div>
+              <p className="text-navy font-semibold text-[14px] mb-1">Tu formulario está vacío</p>
+              <p className="text-gray-500 text-[12.5px] mb-4">
+                <span className="max-[1180px]:hidden">Elige un tipo de pregunta en el menú de la izquierda.</span>
+                <span className="min-[1181px]:hidden">Toca el botón para agregar tu primera pregunta.</span>
+              </p>
+              <button type="button" onClick={() => setSheet(true)} className="btn btn-primary min-[1181px]:hidden">
+                + Agregar pregunta
+              </button>
+            </div>
+          )}
+
+          {fields.map((f, idx) => (
+            <div key={f.id}>
+              {idx > 0 && (
+                <InsertRow
+                  open={pickerAt === idx}
+                  onToggle={() => setPickerAt(pickerAt === idx ? null : idx)}
+                  onClose={() => setPickerAt(null)}
+                  onPick={(t) => addField(t, idx)}
+                />
+              )}
+              <div
+                id={"field-" + f.id}
+                onClick={() => setActiveId(f.id)}
+                onFocusCapture={() => setActiveId(f.id)}
+                onDragOver={(e) => {
+                  if (dragField) {
+                    e.preventDefault();
+                    setOverField(f.id);
+                  }
                 }}
-                onDragEnd={() => {
+                onDrop={(e) => {
+                  if (!dragField) return;
+                  e.preventDefault();
+                  dropField(f.id);
                   setDragField(null);
                   setOverField(null);
                 }}
-                className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-navy px-1 py-1"
+                className={`card my-1 overflow-hidden transition-shadow ${dragField === f.id ? "opacity-40" : ""} ${
+                  dragField && overField === f.id && dragField !== f.id ? "ring-2 ring-blue" : ""
+                } ${activeId === f.id && !dragField ? "!border-blue shadow-[0_0_0_3px_rgba(59,111,166,0.14)]" : ""} ${
+                  f.type === "seccion" ? "border-l-4 !border-l-navy" : ""
+                }`}
               >
-                <GripIcon />
-              </span>
-              <span className="w-5 h-5 rounded-full bg-[#EEF0F3] text-off text-[10.5px] font-bold flex items-center justify-center shrink-0">
-                {idx + 1}
-              </span>
-              <FieldBadge type={f.type} size={30} />
-              <div className="min-w-0">
-                <p className="text-[12.5px] font-semibold text-navy leading-tight">{TYPE_LABELS[f.type]}</p>
-                <p className="text-[11px] text-gray-500 truncate hidden sm:block">{TYPE_HINTS[f.type]}</p>
-              </div>
-              {f.showIf && (
-                <span className="text-[10.5px] font-semibold text-[#6B4FA3] bg-[#EFEAF8] rounded-full px-2 py-0.5">
-                  Condicional
-                </span>
-              )}
-              <div className="ml-auto flex items-center gap-1">
-                {f.type !== "seccion" && f.type !== "info" && (
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={!!f.required}
-                    onClick={() => updateField(f.id, "required", !f.required)}
-                    className="flex items-center gap-1.5 text-[12px] text-gray-600 mr-1.5"
-                  >
-                    <span
-                      className={`w-8 h-[18px] rounded-full relative transition-colors ${
-                        f.required ? "bg-blue" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all ${
-                          f.required ? "left-[16px]" : "left-[2px]"
-                        }`}
-                      />
+                <div
+                  draggable
+                  title="Arrastra esta barra para mover la pregunta"
+                  onDragStart={(e) => {
+                    setDragField(f.id);
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData("text/plain", f.id);
+                    const card = e.currentTarget.closest("[id^='field-']");
+                    if (card) e.dataTransfer.setDragImage(card, 20, 20);
+                  }}
+                  onDragEnd={() => {
+                    setDragField(null);
+                    setOverField(null);
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[#F2EFE9] bg-[#FCFBF8] flex-wrap cursor-grab active:cursor-grabbing"
+                >
+                  <span className="text-gray-400 px-1 py-1">
+                    <GripIcon />
+                  </span>
+                  <span className="w-5 h-5 rounded-full bg-[#EEF0F3] text-off text-[10.5px] font-bold flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
+                  <FieldBadge type={f.type} size={30} />
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] font-semibold text-navy leading-tight">{TYPE_LABELS[f.type]}</p>
+                    <p className="text-[11px] text-gray-500 truncate hidden sm:block">
+                      {f.type === "seccion" && totalPages > 1 ? `Inicia la página ${pageOf[f.id]}` : TYPE_HINTS[f.type]}
+                    </p>
+                  </div>
+                  {f.showIf && (
+                    <span className="text-[10.5px] font-semibold text-[#6B4FA3] bg-[#EFEAF8] rounded-full px-2 py-0.5">
+                      Condicional
                     </span>
-                    Obligatorio
-                  </button>
-                )}
-                <IconBtn title="Duplicar campo" onClick={() => duplicateField(f.id)}>
-                  <svg {...svgProps}>
-                    <rect x="9" y="9" width="11" height="11" rx="2" />
-                    <path d="M5 15V6a2 2 0 0 1 2-2h8" />
-                  </svg>
-                </IconBtn>
-                <IconBtn title="Subir" onClick={() => moveField(f.id, -1)}>
-                  <svg {...svgProps}>
-                    <path d="m6 14 6-6 6 6" />
-                  </svg>
-                </IconBtn>
-                <IconBtn title="Bajar" onClick={() => moveField(f.id, 1)}>
-                  <svg {...svgProps}>
-                    <path d="m6 10 6 6 6-6" />
-                  </svg>
-                </IconBtn>
-                <IconBtn title="Eliminar campo" onClick={() => removeField(f.id)} danger>
-                  <svg {...svgProps}>
-                    <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13" />
-                  </svg>
-                </IconBtn>
-              </div>
-            </div>
-
-            <div className="p-4">
-              <FormatBar fmt={f.fmt} onChange={(v) => updateField(f.id, "fmt", v)} />
-              {f.type === "info" ? (
-                <textarea
-                  id={"label-" + f.id}
-                  value={f.label}
-                  onChange={(e) => updateField(f.id, "label", e.target.value)}
-                  placeholder="Escribe aquí el texto informativo..."
-                  rows={3}
-                  style={fmtStyle(f.fmt)}
-                  className="input"
-                />
-              ) : (
-                <input
-                  id={"label-" + f.id}
-                  type="text"
-                  value={f.label}
-                  onChange={(e) => updateField(f.id, "label", e.target.value)}
-                  placeholder={f.type === "seccion" ? "Título de la sección..." : "Escribe la pregunta..."}
-                  style={fmtStyle(f.fmt)}
-                  className="input"
-                />
-              )}
-              {OPTION_TYPES.includes(f.type) && (
-                <OptionsEditor
-                  type={f.type}
-                  options={f.options}
-                  onChange={(v) => updateField(f.id, "options", v)}
-                />
-              )}
-              <ConditionEditor
-                field={f}
-                index={idx}
-                fields={fields}
-                onChange={(v) => updateField(f.id, "showIf", v)}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="min-[941px]:sticky min-[941px]:top-4">
-        <div className="card p-5">
-          <StepHeader n={3} title="Completa los detalles" subtitle="Esta información aparece en tu formulario." />
-
-          <SidebarSection label="General">
-            <Field label="Título del formulario">
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="input"
-                placeholder="Ej. Solicitud de cotización"
-              />
-            </Field>
-            <Field label="Descripción (opcional)">
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="input min-h-[64px]"
-                placeholder="Una o dos frases que expliquen de qué trata"
-              />
-            </Field>
-          </SidebarSection>
-
-          <SidebarSection label="Al enviar la respuesta">
-            <Field label="Texto del botón">
-              <input value={buttonText} onChange={(e) => setButtonText(e.target.value)} className="input" />
-            </Field>
-            <Field label="Mensaje de agradecimiento">
-              <textarea
-                value={thanksMessage}
-                onChange={(e) => setThanksMessage(e.target.value)}
-                className="input min-h-[64px]"
-              />
-            </Field>
-          </SidebarSection>
-
-          <SidebarSection label="Apariencia">
-            <Field label="Color principal">
-              <div className="flex items-center gap-2.5">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="w-11 h-9 border border-[#E4E7EC] rounded-lg p-0.5 bg-white"
-                />
-                <span className="text-[12px] text-gray-500 uppercase">{color}</span>
-              </div>
-            </Field>
-          </SidebarSection>
-
-          <SidebarSection label="Publicación">
-            <Field label="Estado">
-              <select value={status} onChange={(e) => setStatus(e.target.value)} className="input">
-                <option value="borrador">Borrador — no se puede responder todavía</option>
-                <option value="activo">Activo — ya se puede compartir y responder</option>
-                <option value="inactivo">Inactivo — se desactivó temporalmente</option>
-              </select>
-            </Field>
-            {slug && (
-              <Field label="Enlace público">
-                <div className="flex gap-1.5">
-                  <input
-                    readOnly
-                    value={"/f/" + slug}
-                    className="input !py-1.5 text-[12px] text-gray-500"
-                    onFocus={(e) => e.target.select()}
-                  />
-                  <button type="button" onClick={copyLink} className="btn-sm shrink-0">
-                    Copiar
-                  </button>
+                  )}
+                  <div className="ml-auto flex items-center gap-1" onDragStart={(e) => e.stopPropagation()}>
+                    {f.type !== "seccion" && f.type !== "info" && (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!f.required}
+                        onClick={() => updateField(f.id, "required", !f.required)}
+                        className="flex items-center gap-1.5 text-[12px] text-gray-600 mr-1.5"
+                      >
+                        <span
+                          className={`w-8 h-[18px] rounded-full relative transition-colors ${
+                            f.required ? "bg-blue" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all ${
+                              f.required ? "left-[16px]" : "left-[2px]"
+                            }`}
+                          />
+                        </span>
+                        Obligatorio
+                      </button>
+                    )}
+                    <IconBtn title="Duplicar campo" onClick={() => duplicateField(f.id)}>
+                      <svg {...svgProps}>
+                        <rect x="9" y="9" width="11" height="11" rx="2" />
+                        <path d="M5 15V6a2 2 0 0 1 2-2h8" />
+                      </svg>
+                    </IconBtn>
+                    <IconBtn title="Subir" onClick={() => moveField(f.id, -1)}>
+                      <svg {...svgProps}>
+                        <path d="m6 14 6-6 6 6" />
+                      </svg>
+                    </IconBtn>
+                    <IconBtn title="Bajar" onClick={() => moveField(f.id, 1)}>
+                      <svg {...svgProps}>
+                        <path d="m6 10 6 6 6-6" />
+                      </svg>
+                    </IconBtn>
+                    <IconBtn title="Eliminar campo" onClick={() => removeField(f.id)} danger>
+                      <svg {...svgProps}>
+                        <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13" />
+                      </svg>
+                    </IconBtn>
+                  </div>
                 </div>
-                {status !== "activo" && (
-                  <p className="text-[11px] text-warn mt-1.5">
-                    Este enlace empezará a funcionar cuando el estado esté en "Activo".
-                  </p>
-                )}
-              </Field>
-            )}
-          </SidebarSection>
+
+                <div className="p-4">
+                  <FormatBar fmt={f.fmt} onChange={(v) => updateField(f.id, "fmt", v)} />
+                  {f.type === "info" ? (
+                    <textarea
+                      id={"label-" + f.id}
+                      value={f.label}
+                      onChange={(e) => updateField(f.id, "label", e.target.value)}
+                      placeholder="Escribe aquí el texto informativo..."
+                      rows={3}
+                      style={fmtStyle(f.fmt)}
+                      className="input"
+                    />
+                  ) : (
+                    <input
+                      id={"label-" + f.id}
+                      type="text"
+                      value={f.label}
+                      onChange={(e) => updateField(f.id, "label", e.target.value)}
+                      placeholder={f.type === "seccion" ? "Título de la sección..." : "Escribe la pregunta..."}
+                      style={fmtStyle(f.fmt)}
+                      className="input"
+                    />
+                  )}
+                  {OPTION_TYPES.includes(f.type) && (
+                    <OptionsEditor
+                      type={f.type}
+                      options={f.options}
+                      onChange={(v) => updateField(f.id, "options", v)}
+                    />
+                  )}
+                  <ConditionEditor
+                    field={f}
+                    index={idx}
+                    fields={fields}
+                    onChange={(v) => updateField(f.id, "showIf", v)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {fields.length > 0 && (
+            <div className="mt-3">
+              <InsertRow
+                label="Agregar pregunta al final"
+                open={pickerAt === fields.length}
+                onToggle={() => setPickerAt(pickerAt === fields.length ? null : fields.length)}
+                onClose={() => setPickerAt(null)}
+                onPick={(t) => addField(t, fields.length)}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="flex gap-2.5 mt-3.5">
-          <button type="button" onClick={() => setShowPreview(true)} className="btn btn-outline flex-1">
-            Vista previa
-          </button>
-          <button onClick={save} disabled={saving} className="btn btn-primary flex-1 !py-3">
-            {saving ? "Guardando..." : "Guardar"}
-          </button>
-        </div>
+        {/* DERECHA: ajustes del formulario */}
+        <aside className="min-[1181px]:sticky min-[1181px]:top-[86px] min-[1181px]:max-h-[calc(100vh-110px)] min-[1181px]:overflow-y-auto">
+          <div className="card p-5">
+            <p className="text-[14px] font-semibold text-navy leading-tight">Ajustes del formulario</p>
+
+            <SidebarSection label="Al enviar la respuesta">
+              <Field label="Texto del botón">
+                <input value={buttonText} onChange={(e) => setButtonText(e.target.value)} className="input" />
+              </Field>
+              <Field label="Mensaje de agradecimiento">
+                <textarea
+                  value={thanksMessage}
+                  onChange={(e) => setThanksMessage(e.target.value)}
+                  className="input min-h-[64px]"
+                />
+              </Field>
+            </SidebarSection>
+
+            <SidebarSection label="Apariencia">
+              <Field label="Color principal">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="w-11 h-9 border border-[#E4E7EC] rounded-lg p-0.5 bg-white"
+                  />
+                  <span className="text-[12px] text-gray-500 uppercase">{color}</span>
+                </div>
+              </Field>
+            </SidebarSection>
+
+            <SidebarSection label="Publicación">
+              <p className="text-[11.5px] text-gray-500 mb-2.5 leading-snug">
+                <strong>Borrador:</strong> no se puede responder. <strong>Activo:</strong> ya se puede compartir.{" "}
+                <strong>Inactivo:</strong> pausado. Cámbialo arriba, junto a Guardar.
+              </p>
+              {slug ? (
+                <Field label="Enlace público">
+                  <div className="flex gap-1.5">
+                    <input
+                      readOnly
+                      value={"/f/" + slug}
+                      className="input !py-1.5 text-[12px] text-gray-500"
+                      onFocus={(e) => e.target.select()}
+                    />
+                    <button type="button" onClick={copyLink} className="btn-sm shrink-0">
+                      Copiar
+                    </button>
+                  </div>
+                  {status !== "activo" && (
+                    <p className="text-[11px] text-warn mt-1.5">
+                      Este enlace empezará a funcionar cuando el estado esté en "Activo".
+                    </p>
+                  )}
+                </Field>
+              ) : (
+                <p className="text-[11.5px] text-gray-500">
+                  El enlace se crea con el título al guardar (ej. <code>/f/{slugPreview(title)}</code>).
+                </p>
+              )}
+            </SidebarSection>
+          </div>
+        </aside>
       </div>
+
+      {/* Celular / pantallas angostas: botón flotante para agregar preguntas */}
+      {fields.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setSheet(true)}
+          className="min-[1181px]:hidden fixed bottom-5 right-5 z-40 btn btn-primary shadow-lg !rounded-full !px-5 !py-3"
+        >
+          + Pregunta
+        </button>
+      )}
+      {sheet && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center" onClick={() => setSheet(false)}>
+          <div
+            className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[14px] font-semibold text-navy">¿Qué quieres agregar?</p>
+              <button type="button" onClick={() => setSheet(false)} className="text-[22px] leading-none text-gray-500 px-2">
+                ×
+              </button>
+            </div>
+            <TypePicker
+              variant="grid"
+              onPick={(t) => {
+                addField(t);
+                setSheet(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {showPreview && (
         <div className="fixed inset-0 z-50 bg-black/45 flex flex-col" onClick={() => setShowPreview(false)}>

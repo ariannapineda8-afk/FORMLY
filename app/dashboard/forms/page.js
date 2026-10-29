@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
 export default function FormsListPage() {
+  const router = useRouter();
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -114,28 +116,38 @@ export default function FormsListPage() {
       )}
 
       {filtered.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="card overflow-hidden divide-y divide-[#F2EFE9]">
           {filtered.map((f) => (
-            <div key={f.id} className="card p-5 flex flex-col">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl bg-navylt text-navy flex items-center justify-center font-display font-semibold text-[14px]">
-                  {(f.title || "?").slice(0, 1).toUpperCase()}
-                </div>
-                <span className={`badge ${f.status}`}>{f.status}</span>
+            <div
+              key={f.id}
+              role="link"
+              tabIndex={0}
+              onClick={() => router.push(`/dashboard/forms/${f.id}/edit`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") router.push(`/dashboard/forms/${f.id}/edit`);
+              }}
+              title="Haz clic para abrir y editar este formulario"
+              className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-[#F6F9FC] transition-colors flex-wrap lg:flex-nowrap"
+            >
+              <div className="w-10 h-10 rounded-xl bg-navylt text-navy flex items-center justify-center font-display font-semibold text-[15px] shrink-0">
+                {(f.title || "?").slice(0, 1).toUpperCase()}
               </div>
-              <h3 className="text-[15px] font-semibold text-navy mb-1 leading-snug">{f.title}</h3>
-              <p className="text-[12px] text-gray-500 mb-4">
-                Actualizado {new Date(f.updated_at).toLocaleDateString()}
-              </p>
-              <div className="flex gap-1.5 flex-wrap mt-auto pt-3 border-t border-[#F2EFE9]">
+              <div className="min-w-0 flex-1 basis-[220px]">
+                <h3 className="text-[14.5px] font-semibold text-navy leading-snug truncate">{f.title}</h3>
+                <p className="text-[12px] text-gray-500 truncate">
+                  /f/{f.slug} · actualizado {new Date(f.updated_at).toLocaleDateString()}
+                </p>
+              </div>
+              <span className={`badge ${f.status} shrink-0`}>{f.status}</span>
+              <div className="flex gap-1.5 flex-wrap shrink-0" onClick={(e) => e.stopPropagation()}>
                 <Link href={`/dashboard/forms/${f.id}/edit`} className="btn-sm">Editar</Link>
                 <Link href={`/dashboard/forms/${f.id}/responses`} className="btn-sm">Respuestas</Link>
+                <button onClick={() => copyLink(f.slug)} className="btn-sm">Copiar enlace</button>
                 <button onClick={() => duplicate(f)} className="btn-sm">Duplicar</button>
                 <button onClick={() => toggleStatus(f)} className="btn-sm">
                   {f.status === "activo" ? "Desactivar" : "Activar"}
                 </button>
-                <button onClick={() => copyLink(f.slug)} className="btn-sm">Copiar enlace</button>
-                <button onClick={() => remove(f)} className="btn-sm">Eliminar</button>
+                <button onClick={() => remove(f)} className="btn-sm !text-[#B23A3A]">Eliminar</button>
               </div>
             </div>
           ))}
