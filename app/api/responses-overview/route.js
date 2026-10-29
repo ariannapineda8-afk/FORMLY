@@ -18,13 +18,18 @@ export async function GET() {
 
   const counts = {};
   const latest = {};
+  const times = {};
   (responseRows || []).forEach((r) => {
     counts[r.form_id] = (counts[r.form_id] || 0) + 1;
+    (times[r.form_id] = times[r.form_id] || []).push(r.submitted_at);
     if (!latest[r.form_id] || r.submitted_at > latest[r.form_id]) latest[r.form_id] = r.submitted_at;
   });
 
   const forms = (formList || [])
-    .map((f) => ({ ...f, count: counts[f.id] || 0, latest: latest[f.id] || null }))
+    .map((f) => ({ ...f, count: counts[f.id] || 0, latest: latest[f.id] || null,
+      // Fechas de las últimas respuestas (para marcar cuáles son nuevas en cada navegador).
+      times: (times[f.id] || []).sort().reverse().slice(0, 200),
+    }))
     .sort((a, b) => b.count - a.count);
 
   return NextResponse.json({ forms });

@@ -4,9 +4,11 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { useNewResponses, NewBadge } from "@/lib/newResponses";
 
 export default function FormsListPage() {
   const router = useRouter();
+  const { byForm } = useNewResponses();
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -141,7 +143,9 @@ export default function FormsListPage() {
               <span className={`badge ${f.status} shrink-0`}>{f.status}</span>
               <div className="flex gap-1.5 flex-wrap shrink-0" onClick={(e) => e.stopPropagation()}>
                 <Link href={`/dashboard/forms/${f.id}/edit`} className="btn-sm">Editar</Link>
-                <Link href={`/dashboard/forms/${f.id}/responses`} className="btn-sm">Respuestas</Link>
+                <Link href={`/dashboard/forms/${f.id}/responses`} className="btn-sm inline-flex items-center gap-1.5">
+                  Respuestas <NewBadge n={byForm[f.id]} />
+                </Link>
                 <button onClick={() => copyLink(f.slug)} className="btn-sm">Copiar enlace</button>
                 <button onClick={() => duplicate(f)} className="btn-sm">Duplicar</button>
                 <button onClick={() => toggleStatus(f)} className="btn-sm">

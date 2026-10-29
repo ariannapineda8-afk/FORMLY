@@ -11,6 +11,8 @@ import {
   SIZES,
   parseOptions,
   fmtStyle,
+  toneHex,
+  TONE_HEX,
 } from "@/lib/fields";
 import { FieldBadge, GripIcon } from "@/components/FieldIcon";
 import { LOGIC_TRIGGER_TYPES, triggerChoices, findBrokenCondition } from "@/lib/logic";
@@ -295,7 +297,10 @@ function TypePicker({ onPick, variant = "list" }) {
     <div className={variant === "list" ? "space-y-4" : "space-y-3"}>
       {FIELD_GROUPS.map((g) => (
         <div key={g.name}>
-          <p className="text-[10.5px] font-bold text-off uppercase tracking-wide mb-1.5">{g.name}</p>
+          <p className="text-[10.5px] font-bold uppercase tracking-wide mb-1.5 flex items-center gap-1.5" style={{ color: TONE_HEX[g.tone] }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: TONE_HEX[g.tone] }} />
+            {g.name}
+          </p>
           <div className={variant === "list" ? "flex flex-col gap-1" : "grid grid-cols-2 sm:grid-cols-3 gap-1.5"}>
             {g.types.map((t) => (
               <button
@@ -580,34 +585,34 @@ export default function FormBuilder({ formId, initial }) {
   return (
     <div>
       {/* Barra superior fija: siempre a la mano para guardar y probar */}
-      <div className="sticky top-3 z-30 mb-5 rounded-2xl border border-[#E4E7EC] bg-white/95 backdrop-blur px-4 py-2.5 shadow-[0_2px_10px_rgba(18,41,77,0.08)] flex items-center gap-3 flex-wrap">
+      <div className="sticky top-3 z-30 mb-5 rounded-2xl bg-gradient-to-r from-navy via-navy2 to-[#2C5680] text-white px-4 py-2.5 shadow-[0_4px_14px_rgba(18,41,77,0.25)] flex items-center gap-3 flex-wrap">
         <div className="min-w-0 flex-1 basis-[180px]">
-          <p className="text-[11px] text-gray-500 leading-tight">{formId ? "Editando" : "Nuevo formulario"}</p>
-          <p className="text-[14px] font-semibold text-navy truncate leading-tight">{title.trim() || "Sin título"}</p>
+          <p className="text-[11px] text-white/60 leading-tight">{formId ? "Editando" : "Nuevo formulario"}</p>
+          <p className="text-[14px] font-semibold text-white truncate leading-tight">{title.trim() || "Sin título"}</p>
         </div>
-        <label className="flex items-center gap-2 text-[12px] text-gray-500">
+        <label className="flex items-center gap-2 text-[12px] text-white/70">
           Estado
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="input !py-1.5 !w-auto text-[12.5px]"
+            className="input !py-1.5 !w-auto text-[12.5px] !text-navy"
           >
             <option value="borrador">{statusStyles.borrador}</option>
             <option value="activo">{statusStyles.activo}</option>
             <option value="inactivo">{statusStyles.inactivo}</option>
           </select>
         </label>
-        <button type="button" onClick={() => setShowPreview(true)} className="btn btn-outline !py-2">
+        <button type="button" onClick={() => setShowPreview(true)} className="btn !py-2 bg-white/10 text-white border border-white/30 hover:bg-white/20">
           Vista previa
         </button>
-        <button onClick={save} disabled={saving} className="btn btn-primary !py-2">
+        <button onClick={save} disabled={saving} className="btn !py-2 bg-mint text-white hover:brightness-110">
           {saving ? "Guardando..." : "Guardar"}
         </button>
       </div>
 
-      <div className="grid grid-cols-[210px_minmax(0,1fr)_280px] gap-5 items-start max-[1180px]:grid-cols-[minmax(0,1fr)]">
+      <div className="rounded-2xl bg-[#EEF4FB] p-4 grid grid-cols-[210px_minmax(0,1fr)_280px] gap-5 items-start max-[1180px]:grid-cols-[minmax(0,1fr)] max-[1180px]:p-3">
         {/* IZQUIERDA: tipos de pregunta siempre visibles */}
-        <aside className="max-[1180px]:hidden sticky top-[86px] max-h-[calc(100vh-110px)] overflow-y-auto rounded-2xl border border-[#E4E7EC] bg-[#FAFBFD] p-3.5">
+        <aside className="max-[1180px]:hidden sticky top-[86px] max-h-[calc(100vh-110px)] overflow-y-auto rounded-2xl border border-[#D5E1EE] bg-white p-3.5 shadow-sm">
           <p className="text-[13px] font-semibold text-navy leading-tight">Agregar pregunta</p>
           <p className="text-[11px] text-gray-500 mt-0.5 mb-3.5 leading-snug">
             {activeId && fields.some((x) => x.id === activeId)
@@ -686,9 +691,8 @@ export default function FormBuilder({ formId, initial }) {
                 }}
                 className={`card my-1 overflow-hidden transition-shadow ${dragField === f.id ? "opacity-40" : ""} ${
                   dragField && overField === f.id && dragField !== f.id ? "ring-2 ring-blue" : ""
-                } ${activeId === f.id && !dragField ? "!border-blue shadow-[0_0_0_3px_rgba(59,111,166,0.14)]" : ""} ${
-                  f.type === "seccion" ? "border-l-4 !border-l-navy" : ""
-                }`}
+                } ${activeId === f.id && !dragField ? "!border-blue shadow-[0_0_0_3px_rgba(59,111,166,0.14)]" : ""}`}
+                style={{ borderLeft: `5px solid ${f.type === "seccion" ? "#12294D" : toneHex(f.type)}` }}
               >
                 <div
                   draggable
@@ -704,7 +708,8 @@ export default function FormBuilder({ formId, initial }) {
                     setDragField(null);
                     setOverField(null);
                   }}
-                  className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[#F2EFE9] bg-[#FCFBF8] flex-wrap cursor-grab active:cursor-grabbing"
+                  className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[#F2EFE9] flex-wrap cursor-grab active:cursor-grabbing"
+                  style={{ background: (f.type === "seccion" ? "#12294D" : toneHex(f.type)) + "14" }}
                 >
                   <span className="text-gray-400 px-1 py-1">
                     <GripIcon />
@@ -982,7 +987,7 @@ function Field({ label, children }) {
 function SidebarSection({ label, children, className = "" }) {
   return (
     <div className={`mt-4 pt-4 border-t border-[#F2EFE9] ${className}`}>
-      <p className="text-[10.5px] font-bold text-off uppercase tracking-wide mb-2.5">{label}</p>
+      <p className="text-[10.5px] font-bold text-coral2 uppercase tracking-wide mb-2.5">{label}</p>
       {children}
     </div>
   );

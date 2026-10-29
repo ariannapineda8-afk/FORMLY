@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import ResponseDrawer from "@/components/ResponseDrawer";
 import { useRole } from "@/components/RoleContext";
 import { downloadResponsePdf } from "@/lib/pdf";
+import { seenAtFor, markFormSeen } from "@/lib/newResponses";
 
 export default function ResponsesPage({ params }) {
   const [form, setForm] = useState(null);
@@ -12,16 +13,19 @@ export default function ResponsesPage({ params }) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
+  const [seenAt, setSeenAt] = useState(null);
   const { role } = useRole();
   const canEdit = role === "admin" || role === "editor";
 
   useEffect(() => {
     (async () => {
       setLoading(true);
+      setSeenAt(seenAtFor(params.id));
       try {
         const { form, responses } = await apiFetch(`/api/forms/${params.id}/responses`);
         setForm(form);
         setResponses(responses || []);
+        markFormSeen(params.id);
       } catch (err) {
         alert(err.message);
       }
@@ -126,9 +130,19 @@ export default function ResponsesPage({ params }) {
                   <tr
                     key={r.id}
                     onClick={() => setSelectedId(r.id)}
-                    className={`cursor-pointer ${r.id === selectedId ? "!bg-[#EAF1F9]" : ""}`}
+                    className={`cursor-pointer ${
+                      r.id === selectedId ? "!bg-[#EAF1F9]" : seenAt && r.submitted_at > seenAt ? "!bg-[#FFF5F5]" : ""
+                    }`}
                   >
                     <td className="whitespace-nowrap text-gray-500">
+                      {seenAt && r.submitted_at > seenAt && (
+                        <span
+                          className="inline-flex items-center gap-1 mr-2 px-1.5 py-0.5 rounded-full bg-[#E5484D] text-white text-[10px] font-bold align-middle"
+                          title="Respuesta nueva"
+                        >
+                          NUEVA
+                        </span>
+                      )}
                       {new Date(r.submitted_at).toLocaleString()}
                     </td>
                     {cols.map((c) => (

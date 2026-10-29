@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { useNewResponses, NewBadge } from "@/lib/newResponses";
 
 function Icon({ name }) {
   const common = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
@@ -54,6 +55,7 @@ function Icon({ name }) {
 export default function Sidebar({ email, role = "admin" }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { total: newTotal } = useNewResponses();
   const initials = (email || "?").slice(0, 2).toUpperCase();
   const canEdit = role === "admin" || role === "editor";
 
@@ -95,6 +97,7 @@ export default function Sidebar({ email, role = "admin" }) {
             >
               <Icon name={item.icon} />
               {item.label}
+              {item.icon === "responses" && <NewBadge n={newTotal} className="ml-auto" />}
             </Link>
           );
         })}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { seenAtFor, NewBadge } from "@/lib/newResponses";
 
 export default function AllResponsesPage() {
   const router = useRouter();
@@ -22,6 +23,11 @@ export default function AllResponsesPage() {
       setLoading(false);
     })();
   }, []);
+
+  const newCount = (f) => {
+    const since = seenAtFor(f.id);
+    return (f.times || []).filter((t) => t > since).length;
+  };
 
   const filtered = forms.filter((f) =>
     (f.title || "").toLowerCase().includes(search.trim().toLowerCase())
@@ -74,7 +80,13 @@ export default function AllResponsesPage() {
                     className="cursor-pointer"
                     title="Haz clic para ver las respuestas"
                   >
-                    <td className="font-medium">{f.title}</td>
+                    <td className="font-medium">
+                      <span className="inline-flex items-center gap-2">
+                        {f.title}
+                        <NewBadge n={newCount(f)} />
+                        {newCount(f) > 0 && <span className="text-[11px] font-semibold text-[#E5484D]">nuevas</span>}
+                      </span>
+                    </td>
                     <td>
                       <span className={`badge ${f.status}`}>{f.status}</span>
                     </td>
