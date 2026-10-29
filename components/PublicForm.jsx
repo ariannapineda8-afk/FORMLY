@@ -166,7 +166,11 @@ export default function PublicForm({ form, preview = false }) {
 
   return (
     <div className={preview ? "flex items-start justify-center p-3 sm:p-6" : "min-h-screen flex items-start justify-center p-6 md:p-10"}>
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl max-w-[520px] w-full p-7 md:p-8">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-2xl max-w-[520px] w-full p-7 md:p-8 shadow-[0_10px_40px_rgba(18,41,77,0.12)] relative overflow-hidden fade-up"
+      >
+        <div className="absolute inset-x-0 top-0 h-2" style={{ background: `linear-gradient(90deg, ${color}, ${color}99)` }} />
         {logoOk && (
           <img
             src="/mardom-logo.png"

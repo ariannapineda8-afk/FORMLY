@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { avatarColors } from "@/lib/colors";
 import { useNewResponses, NewBadge } from "@/lib/newResponses";
 
 export default function FormsListPage() {
@@ -129,9 +130,12 @@ export default function FormsListPage() {
                 if (e.key === "Enter") router.push(`/dashboard/forms/${f.id}/edit`);
               }}
               title="Haz clic para abrir y editar este formulario"
-              className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-[#F6F9FC] transition-colors flex-wrap lg:flex-nowrap"
+              className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-[#F3F8FD] hover:shadow-[inset_4px_0_0_#3B6FA6] transition-all flex-wrap lg:flex-nowrap"
             >
-              <div className="w-10 h-10 rounded-xl bg-navylt text-navy flex items-center justify-center font-display font-semibold text-[15px] shrink-0">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center font-display font-semibold text-[15px] shrink-0"
+                style={avatarColors(f.title)}
+              >
                 {(f.title || "?").slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1 basis-[220px]">

@@ -76,13 +76,17 @@ export default function Sidebar({ email, role = "admin" }) {
   }
 
   return (
-    <div className="w-[220px] shrink-0 bg-navy text-[#CFDAEA] flex flex-col py-5 rounded-2xl shadow-[0_1px_3px_rgba(18,41,77,0.15)]">
-      <div className="brand text-white text-[17px] font-bold px-5 pb-6 flex items-center gap-2.5">
+    <div className="w-[220px] shrink-0 text-[#CFDAEA] flex flex-col py-5 rounded-2xl shadow-[0_8px_24px_rgba(18,41,77,0.25)] relative overflow-hidden"
+      style={{ background: "linear-gradient(170deg, #1C3A66 0%, #12294D 55%, #0D1F3C 100%)" }}
+    >
+      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-[#5BA3D9]/20 blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-16 w-52 h-52 rounded-full bg-[#2FA88A]/15 blur-2xl pointer-events-none" />
+      <div className="brand relative text-white text-[17px] font-bold px-5 pb-6 flex items-center gap-2.5">
         <Image src="/logo-white.png" alt="Formly" width={30} height={39} className="shrink-0" priority />
         Formly
       </div>
 
-      <div className="px-3 flex flex-col gap-1">
+      <div className="px-3 flex flex-col gap-1 relative">
         {items.map((item) => {
           const active = pathname === item.href;
           return (
@@ -91,7 +95,7 @@ export default function Sidebar({ email, role = "admin" }) {
               href={item.href}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13.5px] transition-colors ${
                 active
-                  ? "bg-coral text-white font-semibold"
+                  ? "text-white font-semibold shadow-[0_4px_14px_rgba(0,0,0,0.25)] bg-gradient-to-r from-[#4A82BD] to-[#3B6FA6]"
                   : "text-[#B9C6DC] hover:bg-white/[0.06] hover:text-white"
               }`}
             >
@@ -103,9 +107,9 @@ export default function Sidebar({ email, role = "admin" }) {
         })}
       </div>
 
-      <div className="mt-auto px-3.5 pt-4 mx-3 border-t border-white/10">
+      <div className="mt-auto px-3.5 pt-4 mx-3 border-t border-white/10 relative">
         <div className="flex items-center gap-2.5 mb-3 mt-3.5">
-          <div className="w-8 h-8 rounded-full bg-white/10 text-white text-[11px] font-semibold flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#5BA3D9] to-[#2FA88A] text-white text-[11px] font-semibold flex items-center justify-center shrink-0">
             {initials}
           </div>
           <div className="min-w-0 text-[12px] text-[#B9C6DC] truncate">{email}</div>

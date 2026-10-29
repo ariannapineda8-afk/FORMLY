@@ -33,7 +33,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-cream">
-      <div className="hidden md:flex w-[42%] max-w-[440px] bg-navy text-white flex-col items-center justify-center p-10 relative overflow-hidden">
+      <div className="hidden md:flex w-[42%] max-w-[440px] text-white flex-col items-center justify-center p-10 relative overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #2C5680 0%, #12294D 60%, #0D1F3C 100%)" }}
+      >
+        <div className="absolute -left-20 bottom-10 w-64 h-64 rounded-full bg-[#2FA88A]/25 blur-3xl" />
+        <div className="absolute right-0 top-1/3 w-52 h-52 rounded-full bg-[#5BA3D9]/25 blur-3xl" />
         <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/[0.04]" />
         <div className="absolute -right-6 bottom-24 w-40 h-40 rounded-full border border-white/10" />
         <Image src="/logo-white.png" alt="Formly" width={140} height={182} className="relative" priority />
