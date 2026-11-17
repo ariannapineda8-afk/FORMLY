@@ -407,6 +407,78 @@ export default function FormBuilder({ formId, initial }) {
     })();
   }, [formId]);
 
+  // ---- Borrador automático: si se cierra la página o el navegador, no se pierde nada ----
+  const draftKey = "formly_draft_" + (formId || "nuevo");
+  const [draftOffer, setDraftOffer] = useState(null);
+  const [draftReady, setDraftReady] = useState(false);
+  const [lastAuto, setLastAuto] = useState(null);
+
+  function readDraft() {
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function clearDraft() {
+    try {
+      window.localStorage.removeItem(draftKey);
+    } catch (e) {}
+  }
+  function applyDraft(d) {
+    setTitle(d.title || "");
+    setDescription(d.description || "");
+    setButtonText(d.buttonText || "Enviar");
+    setThanksMessage(d.thanksMessage || "");
+    setColor(d.color || "#12294D");
+    setStatus(d.status || "borrador");
+    setFields(d.fields || []);
+  }
+
+  // Al abrir: si hay un borrador sin guardar, se ofrece recuperarlo.
+  useEffect(() => {
+    // En edición espera a que cargue el formulario guardado.
+    const t = setTimeout(
+      () => {
+        const d = readDraft();
+        const hasContent = d && (d.title?.trim() || (d.fields || []).length > 0);
+        if (hasContent) {
+          if (typeof window !== "undefined" && window.sessionStorage.getItem("formly_restore") === draftKey) {
+            window.sessionStorage.removeItem("formly_restore");
+            applyDraft(d);
+            setDraftReady(true);
+          } else {
+            setDraftOffer(d);
+          }
+        } else {
+          setDraftReady(true);
+        }
+      },
+      formId ? 1500 : 0
+    );
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formId]);
+
+  // Guarda sola cada vez que haces un cambio.
+  useEffect(() => {
+    if (!draftReady) return;
+    if (!title.trim() && fields.length === 0) return;
+    const t = setTimeout(() => {
+      try {
+        const savedAt = new Date().toISOString();
+        window.localStorage.setItem(
+          draftKey,
+          JSON.stringify({ savedAt, title, description, buttonText, thanksMessage, color, status, fields })
+        );
+        setLastAuto(savedAt);
+      } catch (e) {}
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftReady, title, description, buttonText, thanksMessage, color, status, fields]);
+
   useEffect(() => {
     if (!focusId.current) return;
     const el = document.getElementById("label-" + focusId.current);
@@ -526,6 +598,7 @@ export default function FormBuilder({ formId, initial }) {
       } else {
         await apiFetch("/api/forms", { method: "POST", body: JSON.stringify(payload) });
       }
+      clearDraft();
       router.push("/dashboard/forms");
       router.refresh();
     } catch (err) {
@@ -584,11 +657,51 @@ export default function FormBuilder({ formId, initial }) {
 
   return (
     <div>
+      {draftOffer && (
+        <div className="mb-4 rounded-2xl border border-[#F3D9A4] bg-[#FFF8E8] px-4 py-3 flex items-center gap-3 flex-wrap">
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-[13.5px] font-semibold text-[#8A5A00]">Tienes un borrador sin guardar</p>
+            <p className="text-[12px] text-[#8A5A00]/80">
+              {draftOffer.title?.trim() ? `"${draftOffer.title}" · ` : ""}
+              {(draftOffer.fields || []).length} preguntas · guardado automáticamente el{" "}
+              {new Date(draftOffer.savedAt).toLocaleString()}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary !py-2"
+            onClick={() => {
+              applyDraft(draftOffer);
+              setDraftOffer(null);
+              setDraftReady(true);
+            }}
+          >
+            Recuperar
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline !py-2"
+            onClick={() => {
+              clearDraft();
+              setDraftOffer(null);
+              setDraftReady(true);
+            }}
+          >
+            Descartar
+          </button>
+        </div>
+      )}
+
       {/* Barra superior fija: siempre a la mano para guardar y probar */}
       <div className="sticky top-3 z-30 mb-5 rounded-2xl bg-gradient-to-r from-navy via-navy2 to-[#2C5680] text-white px-4 py-2.5 shadow-[0_4px_14px_rgba(18,41,77,0.25)] flex items-center gap-3 flex-wrap">
         <div className="min-w-0 flex-1 basis-[180px]">
           <p className="text-[11px] text-white/60 leading-tight">{formId ? "Editando" : "Nuevo formulario"}</p>
           <p className="text-[14px] font-semibold text-white truncate leading-tight">{title.trim() || "Sin título"}</p>
+          {lastAuto && (
+            <p className="text-[10.5px] text-white/60 leading-tight">
+              Borrador guardado automáticamente · {new Date(lastAuto).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
         </div>
         <label className="flex items-center gap-2 text-[12px] text-white/70">
           Estado
