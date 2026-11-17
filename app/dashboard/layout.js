@@ -43,7 +43,7 @@ export default async function DashboardLayout({ children }) {
     <RoleProvider role={role} email={user.email}>
       <div className="flex min-h-screen bg-cream p-3 gap-3">
         <Sidebar email={user.email} role={role} />
-        <div className="flex-1 min-w-0 bg-white/90 border border-[#E3EAF3] rounded-2xl px-8 py-7 pb-16 shadow-[0_4px_20px_rgba(18,41,77,0.07)] relative overflow-hidden">
+        <div className="flex-1 min-w-0 bg-white/90 border border-[#E3EAF3] rounded-2xl px-8 py-7 pb-16 shadow-[0_4px_20px_rgba(18,41,77,0.07)] relative overflow-clip">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#3B6FA6] via-[#5BA3D9] to-[#2FA88A]" />
           <div className="fade-up">{children}</div>
         </div>
