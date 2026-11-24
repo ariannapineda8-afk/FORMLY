@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import ResponseDrawer from "@/components/ResponseDrawer";
 import { useRole } from "@/components/RoleContext";
 import { downloadResponsePdf } from "@/lib/pdf";
+import FileLinks from "@/components/FileLinks";
 import { seenAtFor, markFormSeen } from "@/lib/newResponses";
 
 export default function ResponsesPage({ params }) {
@@ -149,9 +150,13 @@ export default function ResponsesPage({ params }) {
                       <td key={c.id}>
                         {c.type === "archivo" || c.type === "firma" ? (
                           r.data[c.id] ? (
-                            <a href={r.data[c.id]} target="_blank" className="text-blue underline">
-                              Ver archivo
-                            </a>
+                            c.type === "archivo" ? (
+                              <FileLinks url={r.data[c.id]} name={`${c.label || "archivo"}_${new Date(r.submitted_at).toISOString().slice(0, 10)}_${String(r.id).slice(0, 4)}`} />
+                            ) : (
+                              <a href={r.data[c.id]} target="_blank" className="text-blue underline" onClick={(e) => e.stopPropagation()}>
+                                Ver firma
+                              </a>
+                            )
                           ) : (
                             "—"
                           )

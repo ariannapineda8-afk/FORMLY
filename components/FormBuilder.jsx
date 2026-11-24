@@ -993,6 +993,11 @@ export default function FormBuilder({ formId, initial }) {
                       Copiar
                     </button>
                   </div>
+                  {title.trim() && !slug.startsWith(slugPreview(title)) && (
+                    <p className="text-[11px] text-blue mt-1.5">
+                      Al guardar, el enlace cambiará a <strong>/f/{slugPreview(title)}</strong> (el anterior dejará de funcionar).
+                    </p>
+                  )}
                   {status !== "activo" && (
                     <p className="text-[11px] text-warn mt-1.5">
                       Este enlace empezará a funcionar cuando el estado esté en "Activo".

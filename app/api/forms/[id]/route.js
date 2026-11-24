@@ -29,16 +29,11 @@ export async function PATCH(request, { params }) {
   const update = { updated_at: new Date().toISOString() };
   for (const k of allowed) if (k in payload) update[k] = payload[k];
 
-  // Mientras el formulario sea un borrador, su enlace sigue al título: si lo renombras
-  // (por ejemplo, una copia que conviertes en otra vacante) el enlace se actualiza.
-  // Una vez publicado, el enlace ya no cambia para no romper lo que se haya compartido.
+  // El enlace siempre sigue al título: si cambias el nombre del formulario, el enlace
+  // se actualiza al instante con el nombre nuevo (el enlace anterior deja de funcionar).
   if (typeof payload.title === "string" && payload.title.trim()) {
-    const { data: current } = await supabase
-      .from("forms")
-      .select("title, status")
-      .eq("id", params.id)
-      .single();
-    if (current && current.status === "borrador" && current.title !== payload.title) {
+    const { data: current } = await supabase.from("forms").select("title").eq("id", params.id).single();
+    if (current && current.title !== payload.title) {
       update.slug = await uniqueSlug(supabase, payload.title, params.id);
     }
   }
