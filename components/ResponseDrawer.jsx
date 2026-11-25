@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { downloadResponsePdf } from "@/lib/pdf";
 import FileLinks from "@/components/FileLinks";
+import { attachmentFileName } from "@/lib/fileDownload";
 
 function Chevron({ dir }) {
   return (
@@ -16,7 +17,7 @@ function Empty() {
   return <span className="text-gray-400">— Sin respuesta —</span>;
 }
 
-function Value({ field, raw, response }) {
+function Value({ field, raw, response, fields }) {
   if (field.type === "firma") {
     return raw ? (
       <a href={raw} target="_blank" rel="noreferrer">
@@ -31,7 +32,7 @@ function Value({ field, raw, response }) {
     return raw ? (
       <FileLinks
         url={raw}
-        name={`${field.label || "archivo"}_${new Date(response?.submitted_at || Date.now()).toISOString().slice(0, 10)}_${String(response?.id || "").slice(0, 4)}`}
+        name={attachmentFileName(fields, response?.data, field)}
       />
     ) : (
       <Empty />
@@ -123,7 +124,7 @@ export default function ResponseDrawer({
               {idx + 1}. {field.label || field.type}
             </p>
             <div className="text-[13.5px] text-gray-800 bg-[#FAF8F4] border border-[#ECE7DE] rounded-lg px-3 py-2">
-              <Value field={field} raw={response.data?.[field.id]} response={response} />
+              <Value field={field} raw={response.data?.[field.id]} response={response} fields={form?.fields} />
             </div>
           </div>
         ))}
